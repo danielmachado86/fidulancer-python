@@ -28,6 +28,13 @@
 				"python.defaultInterpreterPath": "/usr/local/bin/python",
 				"python.linting.enabled": true,
 				"python.linting.pylintEnabled": true,
+				"python.linting.pylintUseMinimalCheckers": false,
+				"python.linting.pylintArgs": [
+					"--load-plugins",
+					"pylint_flask",
+					"--init-hook",
+					"import sys; sys.path.insert(0, '/workspace')"
+				],
 				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
 				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 				"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
@@ -50,7 +57,7 @@
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	"forwardPorts": [8081],
+	// s"forwardPorts": [8081],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "pip install --user -r requirements.txt",
