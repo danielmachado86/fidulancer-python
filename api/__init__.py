@@ -1,1 +1,1 @@
-from api.app import create_app, collection
+from api.app import create_app, db

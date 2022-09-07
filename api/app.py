@@ -1,16 +1,26 @@
-from config import Config
+
 from flask import Flask
-from pymongo import MongoClient
+from flask_mongoengine import MongoEngine
 
-client = MongoClient("mongodb", 27017, username='root', password='example', connect=False)
+from config import Config
 
-db = client.fidulancer_db
-collection = db.contracts
 
+db = MongoEngine()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    app.config['MONGODB_SETTINGS'] = {
+        "db": "fidulancer_db",
+        "host": "mongodb",
+        "port": 27017,
+        "username": "root",
+        "password": "example",
+        "alias": "default",
+    }
+    
+    db.init_app(app)
 
     from api.errors import errors
     app.register_blueprint(errors)
