@@ -15,4 +15,5 @@ class User(BaseModel):
     @validator("email")
     @classmethod
     def email_valid(cls, value):
+        
         return value
