@@ -22,4 +22,6 @@ class Config:
     PASSWORD_RESET_URL = os.environ.get('PASSWORD_RESET_URL') or \
         'http://localhost:3000/reset'
     USE_CORS = as_bool(os.environ.get('USE_CORS') or 'yes')
-    CORS_SUPPORTS_CREDENTIALS = True
+    CORS_SUPPORTS_CREDENTIALS = True,
+    MONGO_URI = os.environ.get('MONGO_URI') or \
+        'mongodb://root:example@mongodb:27017/'
