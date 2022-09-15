@@ -9,17 +9,44 @@ from bson.objectid import ObjectId as bson_ObjectId
 
 
 class Config:
+    """ Config pydantic
+    """
     validate_assignment = True
 
 class ObjectId(bson_ObjectId):
+    """_summary_
+
+    Args:
+        bson_ObjectId (_type_): _description_
+
+    Raises:
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+
+    Yields:
+        _type_: _description_
+    """
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
     @classmethod
-    def validate(cls, v):
-        if not isinstance(v, bson_ObjectId):
+    def validate(cls, obj):
+        """_summary_
+
+        Args:
+            v (_type_): _description_
+
+        Raises:
+            TypeError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if not isinstance(obj, bson_ObjectId):
             raise TypeError('ObjectId required')
-        return str(v)
+        return str(obj)
 
 
 class UserRequest(BaseModel):
@@ -36,7 +63,11 @@ class UserRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
+    """_summary_
 
+    Args:
+        BaseModel (_type_): _description_
+    """
     _id: ObjectId
     name: str
     username: str
@@ -56,5 +87,4 @@ def validate_model(model: BaseModel, data: Dict) -> None:
     Returns:
         List[Dict]: errors to be included in response
     """
-    
     model(**data)
