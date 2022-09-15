@@ -3,3 +3,6 @@ good-names=
     i,
     e,
     logger,
+
+[MASTER]
+extension-pkg-whitelist=pydantic
