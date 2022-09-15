@@ -4,7 +4,7 @@
 
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 from flask import Blueprint, current_app, request
 from bson import json_util
@@ -12,9 +12,6 @@ from api import db
 from api.models import UserRequest, UserResponse, validate_model
 
 users = Blueprint('users', __name__)
-
-def objectid(item):
-    item["id"] = str(item["_id"])
 
 @users.route('/users', methods=['GET'])
 def get_user():
@@ -25,10 +22,12 @@ def get_user():
         int: http status code
     """
     current_app.logger.info("Quering all users")
-    results = list(db.cx.fidulancer.user.find({}))
-    errors = []
-    for result in results:
+
+    results = []
+    for result in db.cx.fidulancer.user.find({}):
         validate_model(UserResponse, result)
+        results.append(result)
+
     current_app.logger.info(results)
     return json.loads(json_util.dumps(results)), 200
 
@@ -46,9 +45,10 @@ def new_user():
 
     validate_model(UserRequest, body)
 
-    body["created_at"] = datetime.utcnow().replace(tzinfo=timezone.utc)
-    body["updated_at"] = datetime.min.replace(tzinfo=timezone.utc)
-    
-    current_app.logger.info(body)
+    body["created_at"] = datetime.now()
+    body["updated_at"] = datetime.min
+
     save_result = db.cx.fidulancer.user.insert_one(body)
+
+    current_app.logger.info(save_result.inserted_id)
     return json.loads(json_util.dumps(save_result.inserted_id)), 201
