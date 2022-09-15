@@ -1,3 +1,7 @@
+"""Configutarion variables
+
+"""
+
 import os
 from dotenv import load_dotenv
 
@@ -5,11 +9,21 @@ load_dotenv()
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 def as_bool(value):
+    """_summary_
+
+    Args:
+        value (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     if value:
         return value.lower() in ['true', 'yes', 'on', '1']
     return False
 
 class Config:
+    """Config class
+    """
     # security options
     SECRET_KEY = os.environ.get('SECRET_KEY', 'top-secret!')
     DISABLE_AUTH = as_bool(os.environ.get('DISABLE_AUTH'))
