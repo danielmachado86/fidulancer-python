@@ -44,4 +44,7 @@ def create_app(config_class=Config):
     from api.sessions import sessions  # pylint: disable=import-outside-toplevel
     app.register_blueprint(sessions, url_prefix="/v1")
 
+    from api.payments import funds  # pylint: disable=import-outside-toplevel
+    app.register_blueprint(funds, url_prefix="/v1")
+    
     return app
