@@ -1,41 +1,47 @@
+"""_summary_
 
-from flask import Flask, request
-from flask_pymongo import PyMongo
-from pydantic import BaseModel
+Returns:
+    _type_: _description_
+"""
+
+
+from flask import Flask
 
 from config import Config
+from api.db import Store
 
 
-db = PyMongo()
+user_store = Store("mongodb", "user")
+contract_store = Store("mongodb", "contract")
 
 
 def create_app(config_class=Config):
+    """_summary_
+
+    Args:
+        config_class (_type_, optional): _description_. Defaults to Config.
+
+    Returns:
+        _type_: _description_
+    """
+
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    from api import models
-    db.init_app(app)
+    user_store.init_app(app)
+    contract_store.init_app(app)
+    
+    user_store.create_index("username")
+    user_store.create_index("email")
+    user_store.create_index("mobile")
 
-    from api.errors import errors
+    from api.errors import errors  # pylint: disable=import-outside-toplevel
     app.register_blueprint(errors)
-    from api.users import users
-    app.register_blueprint(users, url_prefix='/v1')
+    
+    from api.users import users  # pylint: disable=import-outside-toplevel
+    app.register_blueprint(users, url_prefix="/v1")
+    
+    from api.sessions import sessions  # pylint: disable=import-outside-toplevel
+    app.register_blueprint(sessions, url_prefix="/v1")
 
-    # define the shell context
-    @app.shell_context_processor
-    def shell_context():  # pragma: no cover
-        ctx = {'db': db.cx.fidulancer}
-        for attr in dir(models):
-            model = getattr(models, attr)
-            if hasattr(model, '__bases__') and \
-                    BaseModel in getattr(model, '__bases__'):
-                ctx[attr] = model
-        app.logger.info(ctx)
-        return ctx
-
-    @app.after_request
-    def after_request(response):
-        # Werkzeug sometimes does not flush the request body so we do it here
-        request.get_data()
-        return response
     return app
