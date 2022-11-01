@@ -4,14 +4,16 @@
 
 import datetime
 from typing import Dict
-from pydantic import BaseModel, EmailStr
+
 from bson.objectid import ObjectId as bson_ObjectId
+from pydantic import BaseModel, EmailStr  # pylint: disable=no-name-in-module
 
 
 class Config:
-    """ Config pydantic
-    """
+    """Config pydantic"""
+
     validate_assignment = True
+
 
 class ObjectId(bson_ObjectId):
     """_summary_
@@ -28,9 +30,11 @@ class ObjectId(bson_ObjectId):
     Yields:
         _type_: _description_
     """
+
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
+
     @classmethod
     def validate(cls, obj):
         """_summary_
@@ -45,21 +49,44 @@ class ObjectId(bson_ObjectId):
             _type_: _description_
         """
         if not isinstance(obj, bson_ObjectId):
-            raise TypeError('ObjectId required')
+            raise TypeError("ObjectId required")
         return str(obj)
 
 
-class UserRequest(BaseModel):
+class CreateUserRequest(BaseModel):
     """Model definition used in the request for user creation
 
     Args:
         BaseModel: Pydantic parent class
     """
+
     name: str
     username: str
     email: EmailStr
     mobile: str
     password: str
+
+
+class UpdateUserRequest(BaseModel):
+    """Model definition used in the request for user creation
+
+    Args:
+        BaseModel: Pydantic parent class
+    """
+
+    name: str
+    email: EmailStr
+    mobile: str
+
+class ChangeUserPasswordRequest(BaseModel):
+    """Model definition used in the request for user creation
+
+    Args:
+        BaseModel: Pydantic parent class
+    """
+
+    old: str
+    new: str
 
 
 class UserResponse(BaseModel):
@@ -68,14 +95,15 @@ class UserResponse(BaseModel):
     Args:
         BaseModel (_type_): _description_
     """
+
     _id: ObjectId
     name: str
     username: str
     email: EmailStr
     mobile: str
-    password: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
 
 def validate_model(model: BaseModel, data: Dict) -> None:
     """_summary_
