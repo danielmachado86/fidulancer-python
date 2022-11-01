@@ -5,34 +5,153 @@
 """
 
 from datetime import datetime
-import json
-from flask import Blueprint, current_app, request
-from bson import json_util
-from api import db
-from api.models import UserRequest, UserResponse, validate_model
+from typing import Dict
 
-users = Blueprint('users', __name__)
+from flask import Blueprint, current_app, jsonify, request, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
-@users.route('/users', methods=['GET'])
-def get_user():
-    """Get user list
+from api import user_store
+from api.auth import authenticated_user, requires_auth
+from api.errors import AuthError, NotFoundError
+from api.models import (ChangeUserPasswordRequest, CreateUserRequest,
+                        UpdateUserRequest, validate_model)
+
+users = Blueprint("users", __name__)
+
+
+def user_response(user: Dict):
+    """_summary_
+
+    Args:
+        user (Dict): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if 'password' in user:
+        del user['password']
+    if 'hashed_password' in user:
+        del user['hashed_password']
+    return user
+
+
+@users.route("/users/<username>", methods=["GET"])
+@requires_auth
+def get_user_response(username):
+    """Get user
 
     Returns:
         json: response
         int: http status code
     """
-    current_app.logger.info("Quering all users")
 
-    results = []
-    for result in db.cx.fidulancer.user.find({}):
-        validate_model(UserResponse, result)
-        results.append(result)
+    if authenticated_user['username'] != username:
+        raise AuthError({"code": "unauthorized",
+                        "description":
+                            "the authenticated user is not authorized"
+                            " to view this resource"})
 
-    current_app.logger.info(results)
-    return json.loads(json_util.dumps(results)), 200
+    user = get_user(username)
+    if user is None:
+        raise NotFoundError({"code": "user_not_found",
+                            "description":
+                                "the resource was not found"})
+
+    response = jsonify(user_response(user))
+    response.status_code = 200
+    return response
 
 
-@users.route('/users', methods=['POST'])
+@users.route("/users/<username>", methods=["PUT"])
+@requires_auth
+def update_user_info(username):
+    """Get user
+
+    Returns:
+        json: response
+        int: http status code
+    """
+
+    if authenticated_user['username'] != username:
+        raise AuthError({"code": "unauthorized",
+                        "description":
+                            "the authenticated user is not authorized"
+                            " to view this resource"})
+
+    user = get_user(username)
+    if user is None:
+        raise NotFoundError({"code": "user_not_found",
+                            "description":
+                                "the resource was not found"})
+
+    body = request.get_json()
+
+    # If not valid pydantic.ValidationError is raised
+    validate_model(UpdateUserRequest, body)
+
+    rsp = user_store.update_user(username, body)
+
+    response = jsonify(rsp.upserted_id)
+    response.headers["Location"] = url_for(
+        "users.update_user_response", username=body["username"])
+    response.status_code = 200
+    return response
+
+
+@users.route("/users/<username>/password", methods=["POST"])
+@requires_auth
+def update_user_password(username):
+    """Update user password
+
+    Returns:
+        json: response
+        int: http status code
+    """
+
+    if authenticated_user['username'] != username:
+        raise AuthError({"code": "unauthorized",
+                        "description":
+                            "the authenticated user is not authorized"
+                            " to view this resource"})
+
+    user = get_user(username)
+    if user is None:
+        raise NotFoundError({"code": "user_not_found",
+                            "description":
+                                "the resource was not found"})
+
+    body = request.get_json()
+
+    # If not valid pydantic.ValidationError is raised
+    validate_model(ChangeUserPasswordRequest, body)
+
+    match = check_password_hash(user.get("hashed_password"), body["old"])
+    if not match:
+        raise AuthError({"code": "unauthorized",
+                        "description":
+                            "old password doesn't match"})
+
+    password = {"hashed_password": generate_password_hash(body["new"])}
+
+    rsp = user_store.update_user(username, password)
+
+    response = jsonify(rsp.upserted_id)
+    response.status_code = 200
+    return response
+
+
+def get_user(username):
+    """Get user
+
+    Returns:
+        json: response
+        int: http status code
+    """
+    user = user_store.get_user(username)
+    return user
+
+
+@users.route("/users", methods=["POST"])
 def new_user():
     """Creates new user
 
@@ -40,15 +159,26 @@ def new_user():
         json: response
         int: http status code
     """
+
     current_app.logger.info("Creating new item")
     body = request.get_json()
 
-    validate_model(UserRequest, body)
+    # If not valid pydantic.ValidationError is raised
+    validate_model(CreateUserRequest, body)
+
+    body["hashed_password"] = generate_password_hash(body["password"])
 
     body["created_at"] = datetime.now()
     body["updated_at"] = datetime.min
 
-    save_result = db.cx.fidulancer.user.insert_one(body)
+    # Unique constraint checked using pymongo.errors.DuplicateKeyError
+    user_store.insert_user(body)
 
-    current_app.logger.info(save_result.inserted_id)
-    return json.loads(json_util.dumps(save_result.inserted_id)), 201
+    # Remove password and hashed_paswords from user object
+    response = user_response(body)
+
+    response = jsonify(response)
+    response.status_code = 201
+    response.headers["Location"] = url_for(
+        "users.get_user_response", username=body["username"])
+    return response
