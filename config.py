@@ -48,4 +48,5 @@ class Config:
     MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD") or "example"
     MONGO_DATABASE = os.environ.get("MONGO_DATABASE") or "fidulancer"
     PAYMENT_API_URL = os.environ.get("PAYMENT_API_URL") or "https://sandbox.wompi.co/v1"
-    PAYMENT_API_AUTH_TOKEN = os.environ.get("PAYMENT_API_AUTH_TOKEN") or "payment_auth_token"
+    PAYMENT_API_PUBLIC_KEY = os.environ.get("PAYMENT_API_PUBLIC_KEY") or "fake_payment_public_key"
+    PAYMENT_API_PRIVATE_KEY = os.environ.get("PAYMENT_API_PRIVATE_KEY") or "fake_payment_private_key"
