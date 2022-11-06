@@ -182,3 +182,23 @@ def new_user():
     response.headers["Location"] = url_for(
         "users.get_user_response", username=body["username"])
     return response
+
+
+def add_payment_method(username, payment_method_data):
+    """_summary_
+
+    Args:
+        username (_type_): _description_
+        card_id (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    rsp = user_store.add_to_list(
+        username=username,
+        data={
+            'payment_method': payment_method_data
+        }
+    )
+
+    return rsp
