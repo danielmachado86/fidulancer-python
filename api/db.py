@@ -101,3 +101,16 @@ class Store:
 
         result = self.collection.update_one(user_filter, newvalues)
         return result
+
+    def add_to_list(self, username, data):
+        """Update user
+
+        Returns:
+            json: response
+            int: http status code
+        """
+        newvalues = { "$push": data }
+        user_filter = { 'username': username }
+
+        result = self.collection.update_one(user_filter, newvalues)
+        return result
