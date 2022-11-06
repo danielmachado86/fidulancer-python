@@ -52,10 +52,6 @@ def get_user_response(username):
                             " to view this resource"})
 
     user = get_user(username)
-    if user is None:
-        raise NotFoundError({"code": "user_not_found",
-                            "description":
-                                "the resource was not found"})
 
     response = jsonify(user_response(user))
     response.status_code = 200
@@ -78,11 +74,7 @@ def update_user_info(username):
                             "the authenticated user is not authorized"
                             " to view this resource"})
 
-    user = get_user(username)
-    if user is None:
-        raise NotFoundError({"code": "user_not_found",
-                            "description":
-                                "the resource was not found"})
+    _ = get_user(username)
 
     body = request.get_json()
 
@@ -115,10 +107,6 @@ def update_user_password(username):
                             " to view this resource"})
 
     user = get_user(username)
-    if user is None:
-        raise NotFoundError({"code": "user_not_found",
-                            "description":
-                                "the resource was not found"})
 
     body = request.get_json()
 
@@ -148,6 +136,10 @@ def get_user(username):
         int: http status code
     """
     user = user_store.get_user(username)
+    if user is None:
+        raise NotFoundError({"code": "user_not_found",
+                            "description":
+                                "the resource was not found"})
     return user
 
 
