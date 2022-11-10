@@ -7,13 +7,14 @@ Returns:
 from functools import wraps
 
 import jwt
-from flask import (_request_ctx_stack,  # pylint: disable=no-name-in-module
-                   current_app, request)
+from flask import _request_ctx_stack  # pylint: disable=no-name-in-module
+from flask import current_app, request
 from werkzeug.local import LocalProxy
 
 from api.errors import AuthError
 
-authenticated_user = LocalProxy(lambda:_request_ctx_stack.top.authenticated_user)
+authenticated_user = LocalProxy(lambda: _request_ctx_stack.top.authenticated_user)
+
 
 def get_token_auth_header() -> str:
     """_summary_
@@ -27,31 +28,37 @@ def get_token_auth_header() -> str:
     Returns:
         str: _description_
     """
-    
-     # Check if token is present in request headers
+
+    # Check if token is present in request headers
     auth = request.headers.get("Authorization", None)
-    current_app.logger.debug(auth)
     if not auth:
-        raise AuthError({"code": "authorization_header_missing",
-                        "description":
-                            "Authorization header is expected"})
+        raise AuthError(
+            {
+                "code": "authorization_header_missing",
+                "description": "Authorization header is expected",
+            }
+        )
     parts = auth.split()
 
     if parts[0].lower() != "bearer":
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Authorization header must start with"
-                            " Bearer"})
+        raise AuthError(
+            {
+                "code": "invalid_header",
+                "description": "Authorization header must start with" " Bearer",
+            }
+        )
     if len(parts) == 1:
-        raise AuthError({"code": "invalid_header",
-                        "description": "Token not found"})
+        raise AuthError({"code": "invalid_header", "description": "Token not found"})
     if len(parts) > 2:
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Authorization header must be"
-                            " Bearer token"})
+        raise AuthError(
+            {
+                "code": "invalid_header",
+                "description": "Authorization header must be" " Bearer token",
+            }
+        )
     token = parts[1]
     return token
+
 
 def requires_auth(func):
     """_summary_
@@ -70,13 +77,17 @@ def requires_auth(func):
                 algorithms=["HS256", "HS512"],
             )
         except jwt.ExpiredSignatureError as expired_sign_error:
-            raise AuthError({"code": "token_expired",
-                                "description": "token is expired"}) from expired_sign_error
+            raise AuthError(
+                {"code": "token_expired", "description": "token is expired"}
+            ) from expired_sign_error
         except Exception as exc:
-            raise AuthError({"code": "invalid_header",
-                            "description":
-                                "Unable to parse authentication"
-                                " token."}) from exc
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authentication" " token.",
+                }
+            ) from exc
         _request_ctx_stack.top.authenticated_user = payload
-        return func(*args, **kwargs)
+        return func(payload["username"], *args, **kwargs)
+
     return wrapper
