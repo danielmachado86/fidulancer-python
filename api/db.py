@@ -2,11 +2,10 @@
 """
 import datetime
 import json
-from flask import Flask
-from pymongo import MongoClient
-from bson import ObjectId
-from pymongo import ASCENDING
 
+from bson import ObjectId
+from flask import Flask
+from pymongo import ASCENDING, MongoClient
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -52,11 +51,10 @@ class Store:
 
             database_name = app.config.get("MONGO_DATABASE")
             self.database = self.client[database_name]
-            
+
             self.collection = self.database.get_collection(self.collection_name)
 
             app.json_encoder = JSONEncoder
-
 
     def create_index(self, attribute: str):
         """_summary_
@@ -65,8 +63,7 @@ class Store:
             attribute (str): _description_
         """
         self.collection.create_index([(attribute, ASCENDING)], unique=True)
-        
-    
+
     def get_user(self, username):
         """Get user
 
@@ -78,7 +75,7 @@ class Store:
         user = self.collection.find_one({"username": username})
         return user
 
-    def insert_user(self, data):
+    def insert(self, data):
         """Get user
 
         Returns:
@@ -96,8 +93,8 @@ class Store:
             json: response
             int: http status code
         """
-        newvalues = { "$set": data }
-        user_filter = { 'username': username }
+        newvalues = {"$set": data}
+        user_filter = {"username": username}
 
         result = self.collection.update_one(user_filter, newvalues)
         return result
@@ -109,8 +106,8 @@ class Store:
             json: response
             int: http status code
         """
-        newvalues = { "$push": data }
-        user_filter = { 'username': username }
+        newvalues = {"$push": data}
+        user_filter = {"username": username}
 
         result = self.collection.update_one(user_filter, newvalues)
         return result
