@@ -8,8 +8,6 @@ services:
       dockerfile: Dockerfile
     container_name: api
     restart: unless-stopped
-    ports:
-      - "5000:80"
     networks:
       - host
 
