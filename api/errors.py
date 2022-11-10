@@ -19,30 +19,36 @@ class NotFoundError(Exception):
     """
     An AuthError is raised whenever the authentication failed.
     """
+
     def __init__(self, error: Dict[str, str]):
         super().__init__()
         self.error = error
         self.status_code = 404
+
 
 # Format error response and append status code.
 class AuthError(Exception):
     """
     An AuthError is raised whenever the authentication failed.
     """
+
     def __init__(self, error: Dict[str, str]):
         super().__init__()
         self.error = error
         self.status_code = 401
+
 
 # Format error response and append status code.
 class PaymentGatewayError(Exception):
     """
     An AuthError is raised whenever the authentication failed.
     """
+
     def __init__(self, error: Dict[str, str]):
         super().__init__()
         self.error = error
         self.status_code = 503
+
 
 @errors.app_errorhandler(NotFoundError)
 def handle_not_found_error(ex: NotFoundError) -> Response:
@@ -55,6 +61,7 @@ def handle_not_found_error(ex: NotFoundError) -> Response:
     response.status_code = ex.status_code
     return response
 
+
 @errors.app_errorhandler(AuthError)
 def handle_auth_error(ex: AuthError) -> Response:
     """
@@ -66,6 +73,7 @@ def handle_auth_error(ex: AuthError) -> Response:
     response.status_code = ex.status_code
     return response
 
+
 @errors.app_errorhandler(PaymentGatewayError)
 def handle_payment_error(ex: PaymentGatewayError) -> Response:
     """
@@ -76,6 +84,7 @@ def handle_payment_error(ex: PaymentGatewayError) -> Response:
     response = jsonify(ex.error)
     response.status_code = ex.status_code
     return response
+
 
 @errors.app_errorhandler(HTTPException)
 def http_error(error):
