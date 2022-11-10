@@ -78,6 +78,7 @@ class UpdateUserRequest(BaseModel):
     email: EmailStr
     mobile: str
 
+
 class ChangeUserPasswordRequest(BaseModel):
     """Model definition used in the request for user creation
 
