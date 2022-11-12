@@ -175,7 +175,6 @@ def new_user():
     body["hashed_password"] = generate_password_hash(body["password"])
 
     body["created_at"] = datetime.now()
-    body["updated_at"] = datetime.min
 
     # Unique constraint checked using pymongo.errors.DuplicateKeyError
     users_store.insert(body)
