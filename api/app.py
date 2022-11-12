@@ -40,6 +40,10 @@ def create_app(config_class=Config):
 
     app.register_blueprint(users, url_prefix="/v1")
 
+    from api.contracts import contracts
+
+    app.register_blueprint(contracts, url_prefix="/v1")
+
     from api.sessions import sessions  # pylint: disable=import-outside-toplevel
 
     app.register_blueprint(sessions, url_prefix="/v1")
