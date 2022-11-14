@@ -11,8 +11,7 @@ from flask import Blueprint, current_app, jsonify, request, url_for
 
 from api import users_store
 from api.auth import requires_auth
-from api.errors import NotFoundError
-from api.users import get_user
+from api.errors import AuthError, NotFoundError
 
 contracts = Blueprint("contracts", __name__)
 
@@ -56,7 +55,7 @@ def get_contract(username, contract_id):
         int: http status code
     """
 
-    contract = query_contract(username, contract_id).next()
+    contract = query_contract(username, contract_id)
 
     response = jsonify(contract)
     response.status_code = 200
@@ -64,37 +63,78 @@ def get_contract(username, contract_id):
 
 
 def query_contract(username, contract_id):
-    """Get user
+    """Query contract
 
     Returns:
         json: response
         int: http status code
     """
-    user = users_store.collection.aggregate(
-        [
-            {"$match": {"contracts._id": ObjectId(contract_id)}},
-            {"$addFields": {"contracts.users": []}},
-            {
-                "$replaceRoot": {
-                    "newRoot": {
-                        "$arrayElemAt": [
-                            {
-                                "$filter": {
-                                    "input": "$contracts",
-                                    "cond": {
-                                        "$eq": ["$$this._id", ObjectId(contract_id)]
-                                    },
-                                }
+    aggregate = [
+        {
+            "$facet": {
+                "contract": [
+                    {"$unwind": "$contracts"},
+                    {"$match": {"contracts._id": ObjectId(contract_id)}},
+                    {
+                        "$addFields": {
+                            "user": {
+                                "_id": "$_id",
+                                "name": "$name",
+                                "username": "$username",
                             },
-                            0,
-                        ]
-                    }
-                }
-            },
-        ]
-    )
-    if user is None:
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": "$contracts._id",
+                            "users": {"$push": "$user"},
+                            "contract": {"$first": "$contracts"},
+                        }
+                    },
+                    {
+                        "$replaceRoot": {
+                            "newRoot": {"$mergeObjects": ["$contract", "$$ROOT"]}
+                        }
+                    },
+                    {"$unset": "contract"},
+                    {
+                        "$match": {
+                            "$and": [
+                                {
+                                    "users": {
+                                        "$elemMatch": {"username": {"$eq": username}}
+                                    }
+                                },
+                                {"_id": ObjectId(contract_id)},
+                            ]
+                        }
+                    },
+                    {"$limit": 1},
+                ],
+                "found": [
+                    {"$match": {"contracts._id": ObjectId(contract_id)}},
+                    {"$project": {"contracts": 1}},
+                ],
+            }
+        }
+    ]
+
+    aggregate_response = users_store.collection.aggregate(aggregate)
+
+    aggregate_response = aggregate_response.next()
+
+    found = aggregate_response["found"]
+    if not found:
         raise NotFoundError(
-            {"code": "user_not_found", "description": "the resource was not found"}
+            {"code": "contract_not_found", "description": "the resource was not found"}
         )
-    return user
+
+    contract = aggregate_response["contract"]
+    if not contract:
+        raise AuthError(
+            {
+                "code": "unauthorized",
+                "description": "authenticated doesn't owns this resource",
+            }
+        )
+    return contract
