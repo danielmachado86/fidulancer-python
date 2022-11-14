@@ -48,7 +48,8 @@
 				"ms-python.vscode-pylance",
 				"njpwerner.autodocstring",
 				"eamodio.gitlens",
-				"VisualStudioExptTeam.vscodeintellicode"
+				"VisualStudioExptTeam.vscodeintellicode",
+				"mongodb.mongodb-vscode"
 			]
 		}
 	},
