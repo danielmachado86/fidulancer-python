@@ -11,7 +11,7 @@ from flask import Blueprint, current_app, jsonify, request, url_for
 
 from api import users_store
 from api.auth import requires_auth
-from api.errors import AuthError, NotFoundError
+from api.errors import AuthError, ConflictError, NotFoundError
 
 contracts = Blueprint("contracts", __name__)
 
@@ -34,7 +34,7 @@ def new_contract(username):
     contract_id = ObjectId()
     contract.update(_id=contract_id, created_at=datetime.now())
 
-    new_contract_data = {"contracts": contract}
+    new_contract_data = {"contracts.active": contract}
     users_store.add_to_list(username, new_contract_data)
 
     response = jsonify(contract)
@@ -55,11 +55,99 @@ def get_contract(username, contract_id):
         int: http status code
     """
 
-    contract = query_contract(username, contract_id)
+    contract, _ = query_contract(username, contract_id)
+
+    if not contract:
+        raise AuthError(
+            {
+                "code": "unauthorized",
+                "description": "authenticated user doesn't owns this resource",
+            }
+        )
 
     response = jsonify(contract)
     response.status_code = 200
     return response
+
+
+@contracts.route("/contracts/<contract_id>/invitations", methods=["POST"])
+@requires_auth
+def send_invitation(username, contract_id):
+    """Get user
+
+    Returns:
+        json: response
+        int: http status code
+    """
+
+    body = request.get_json()
+    new_member_username = body["username"]
+
+    _, users = query_contract(username, contract_id)
+
+    not_owner = True
+    is_member = False
+    for user in users:
+        if username == user["username"]:
+            not_owner = False
+        if new_member_username == user["username"]:
+            is_member = True
+
+    if not_owner:
+        raise AuthError(
+            {
+                "code": "unauthorized",
+                "description": "authenticated user doesn't owns this resource",
+            }
+        )
+
+    if is_member:
+        raise ConflictError(
+            {
+                "code": "conflict",
+                "description": "This contract is already registered to user",
+            }
+        )
+
+    invitation = query_user_invitations(new_member_username, contract_id)
+    current_app.logger.debug(bool(invitation))
+
+    if invitation:
+        raise ConflictError(
+            {
+                "code": "conflict",
+                "description": "The user is already invited to this contract",
+            }
+        )
+
+    contract_data = {
+        "contracts.invitations": {
+            "contract": {"_id": contract_id},
+            "created_at": datetime.now(),
+            "invited_by": username,
+        }
+    }
+    users_store.add_to_list(new_member_username, contract_data)
+
+    response = jsonify({"message": "new member invitation sent"})
+    response.status_code = 200
+    return response
+
+
+def find_contract(user, contract_id):
+    """_summary_
+
+    Args:
+        user (_type_): _description_
+        contract_id (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for contract in user["contracts"]["active"]:
+        if ObjectId(contract_id) == contract["_id"]:
+            return contract
+    return None
 
 
 def query_contract(username, contract_id):
@@ -73,7 +161,7 @@ def query_contract(username, contract_id):
         {
             "$facet": {
                 "contract": [
-                    {"$unwind": "$contracts"},
+                    {"$unwind": "$contracts.active"},
                     {"$match": {"contracts._id": ObjectId(contract_id)}},
                     {
                         "$addFields": {
@@ -86,9 +174,9 @@ def query_contract(username, contract_id):
                     },
                     {
                         "$group": {
-                            "_id": "$contracts._id",
+                            "_id": "$contracts.active._id",
                             "users": {"$push": "$user"},
-                            "contract": {"$first": "$contracts"},
+                            "contract": {"$first": "$contracts.active"},
                         }
                     },
                     {
@@ -111,9 +199,8 @@ def query_contract(username, contract_id):
                     },
                     {"$limit": 1},
                 ],
-                "found": [
-                    {"$match": {"contracts._id": ObjectId(contract_id)}},
-                    {"$project": {"contracts": 1}},
+                "users": [
+                    {"$match": {"contracts.active._id": ObjectId(contract_id)}},
                 ],
             }
         }
@@ -123,18 +210,37 @@ def query_contract(username, contract_id):
 
     aggregate_response = aggregate_response.next()
 
-    found = aggregate_response["found"]
-    if not found:
+    users = aggregate_response["users"]
+    if not users:
         raise NotFoundError(
             {"code": "contract_not_found", "description": "the resource was not found"}
         )
 
     contract = aggregate_response["contract"]
-    if not contract:
-        raise AuthError(
-            {
-                "code": "unauthorized",
-                "description": "authenticated doesn't owns this resource",
+    return contract, users
+
+
+def query_user_invitations(username, contract_id):
+    """Query contract
+
+    Returns:
+        json: response
+        int: http status code
+    """
+    aggregate = [
+        {
+            "$match": {
+                "$and": [
+                    {"contracts.invitations.contract._id": ObjectId(contract_id)},
+                    {"username": username},
+                ]
             }
-        )
-    return contract
+        },
+        {"$limit": 1},
+    ]
+
+    invitations = []
+    for invitation in users_store.collection.aggregate(aggregate):
+        invitations.append(invitation)
+
+    return invitations

@@ -8,8 +8,8 @@ from typing import Dict
 
 from flask import Blueprint, Response, jsonify
 from pydantic import ValidationError
-from werkzeug.exceptions import HTTPException
 from pymongo.errors import DuplicateKeyError
+from werkzeug.exceptions import HTTPException
 
 errors = Blueprint("errors", __name__)
 
@@ -24,6 +24,18 @@ class NotFoundError(Exception):
         super().__init__()
         self.error = error
         self.status_code = 404
+
+
+# Format error response and append status code.
+class ConflictError(Exception):
+    """
+    An AuthError is raised whenever the authentication failed.
+    """
+
+    def __init__(self, error: Dict[str, str]):
+        super().__init__()
+        self.error = error
+        self.status_code = 409
 
 
 # Format error response and append status code.
@@ -48,6 +60,18 @@ class PaymentGatewayError(Exception):
         super().__init__()
         self.error = error
         self.status_code = 503
+
+
+@errors.app_errorhandler(ConflictError)
+def handle_conflict_error(ex: ConflictError) -> Response:
+    """
+    serializes the given AuthError as json and sets the response status code accordingly.
+    :param ex: an auth error
+    :return: json serialized ex response
+    """
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
 
 
 @errors.app_errorhandler(NotFoundError)
