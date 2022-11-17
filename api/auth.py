@@ -7,13 +7,9 @@ Returns:
 from functools import wraps
 
 import jwt
-from flask import _request_ctx_stack  # pylint: disable=no-name-in-module
-from flask import current_app, request
-from werkzeug.local import LocalProxy
+from flask import current_app, g, request
 
 from api.errors import AuthError
-
-authenticated_user = LocalProxy(lambda: _request_ctx_stack.top.authenticated_user)
 
 
 def get_token_auth_header() -> str:
@@ -87,7 +83,7 @@ def requires_auth(func):
                     "description": "Unable to parse authentication" " token.",
                 }
             ) from exc
-        _request_ctx_stack.top.authenticated_user = payload
+        g.authenticated_user = payload
         return func(payload["username"], *args, **kwargs)
 
     return wrapper

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 import jwt
@@ -5,13 +6,26 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
-from api import users_store
-from api.db import JSONEncoder
+from api.db import CustomJSONProvider, get_db
 from api.users import user_response
 
 sessions = Blueprint("sessions", __name__)
+store = get_db()
 
-session_coll = users_store.database.get_collection("session")
+
+class JSONEncoder(json.JSONEncoder):
+    """_summary_
+
+    Args:
+        json (_type_): _description_
+    """
+
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        if isinstance(o, datetime.datetime):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
 
 
 @sessions.route("/sessions/refresher", methods=["POST"])
@@ -32,7 +46,7 @@ def refresh_access_token():
         key=current_app.config["SECRET_KEY"],
         algorithms=["HS256", "HS512"],
     )
-    session = session_coll.find_one({"_id": ObjectId(payload["id"])})
+    session = store.session.find_one({"_id": ObjectId(payload["id"])})
     if session is None:
         return abort(404, "session not found")
     access_token_expires_at = datetime.utcnow() + timedelta(
@@ -71,7 +85,7 @@ def new_session():
     password = data.get("password")
     if username is None or password is None:
         abort(400, "username and password are required")
-    user = users_store.get_user(username)
+    user = store.get_user(username)
     if user is None or not check_password_hash(user.get("hashed_password"), password):
         return abort(401, "username and password incorrect")
     access_token_expires_at = datetime.utcnow() + timedelta(
@@ -103,7 +117,7 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    result = session_coll.insert_one(
+    result = store.session.insert_one(
         {
             "_id": session_id,
             "username": username,

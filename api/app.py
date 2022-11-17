@@ -7,10 +7,8 @@ Returns:
 
 from flask import Flask
 
-from api.db import Store
+from api.db import get_db
 from config import Config
-
-users_store = Store("mongodb", "user")
 
 
 def create_app(config_class=Config):
@@ -26,11 +24,8 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    users_store.init_app(app)
-
-    users_store.create_index("username")
-    users_store.create_index("email")
-    users_store.create_index("mobile")
+    store = get_db()
+    store.init_app(app)
 
     from api.errors import errors  # pylint: disable=import-outside-toplevel
 
@@ -40,7 +35,7 @@ def create_app(config_class=Config):
 
     app.register_blueprint(users, url_prefix="/v1")
 
-    from api.contracts import contracts
+    from api.contracts import contracts  # pylint: disable=import-outside-toplevel
 
     app.register_blueprint(contracts, url_prefix="/v1")
 

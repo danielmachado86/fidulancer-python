@@ -42,11 +42,13 @@ class Config:
     )
     USE_CORS = as_bool(os.environ.get("USE_CORS") or "yes")
     CORS_SUPPORTS_CREDENTIALS = (True,)
+    STORE_TYPE = os.environ.get("STORE_TYPE") or "mongodb"
     MONGO_URL = os.environ.get("MONGO_URL") or "mongodb"
     MONGO_PORT = int(os.environ.get("MONGO_PORT") or "27017")
     MONGO_USER = os.environ.get("MONGO_USER") or "root"
     MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD") or "example"
     MONGO_DATABASE = os.environ.get("MONGO_DATABASE") or "fidulancer"
+    MONGO_COLLECTION = os.environ.get("MONGO_COLLECTION") or "user"
     PAYMENT_API_URL = os.environ.get("PAYMENT_API_URL") or "https://sandbox.wompi.co/v1"
     PAYMENT_API_PUBLIC_KEY = (
         os.environ.get("PAYMENT_API_PUBLIC_KEY") or "fake_payment_public_key"

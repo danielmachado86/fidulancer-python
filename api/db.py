@@ -1,37 +1,58 @@
 """Configure Database
 """
 import datetime
-import json
 
-from bson import ObjectId
+from bson import ObjectId, json_util
 from flask import Flask
+from flask.json.provider import DefaultJSONProvider
 from pymongo import ASCENDING, MongoClient
+from pymongo.command_cursor import CommandCursor
 
 
-class JSONEncoder(json.JSONEncoder):
+def _convert_mongo_objects(obj):
+    """Convert objects, related to Mongo database to JSON."""
+    converted = None
+    if isinstance(obj, CommandCursor):
+        converted = json_util._json_convert(obj)  # pylint: disable=protected-access
+    elif isinstance(obj, ObjectId):
+        converted = str(obj)
+    elif isinstance(obj, datetime.datetime):
+        converted = obj.isoformat()
+    return converted
+
+
+class CustomJSONProvider(DefaultJSONProvider):
     """_summary_
 
     Args:
         json (_type_): _description_
     """
 
-    def default(self, o):
-        if isinstance(o, ObjectId):
-            return str(o)
-        if isinstance(o, datetime.datetime):
-            return str(o)
-        return json.JSONEncoder.default(self, o)
+    def default(self, obj):
+        """_summary_
+
+        Args:
+            o (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        base = super().default
+
+        if isinstance(
+            obj,
+            (CommandCursor, ObjectId, datetime.datetime),
+        ):
+            return _convert_mongo_objects(obj)
+        return base(self, obj)
 
 
 class Store:
     """Create database"""
 
-    def __init__(self, vendor: str, collection_name: str) -> None:
-        self.vendor = vendor.lower()
-        self.client = None
-        self.database = None
-        self.collection = None
-        self.collection_name = collection_name
+    def __init__(self) -> None:
+        self.user = None
+        self.session = None
 
     def init_app(self, app: Flask) -> None:
         """_summary_
@@ -39,9 +60,9 @@ class Store:
         Args:
             app (Flask): _description_
         """
-        if self.vendor == "mongodb":
+        if app.config.get("STORE_TYPE") == "mongodb":
 
-            self.client = MongoClient(
+            client = MongoClient(
                 host=app.config.get("MONGO_URL"),
                 port=app.config.get("MONGO_PORT"),
                 username=app.config.get("MONGO_USER"),
@@ -50,19 +71,29 @@ class Store:
             )
 
             database_name = app.config.get("MONGO_DATABASE")
-            self.database = self.client[database_name]
+            database = client[database_name]
 
-            self.collection = self.database.get_collection(self.collection_name)
+            self.user = database.get_collection("user")
+            self.session = database.get_collection("session")
 
-            app.json_encoder = JSONEncoder
+            self.create_user_indexes()
 
-    def create_index(self, attribute: str):
+        app.json = CustomJSONProvider(app)
+
+    def create_user_indexes(self):
         """_summary_
 
         Args:
             attribute (str): _description_
         """
-        self.collection.create_index([(attribute, ASCENDING)], unique=True)
+        self.user.create_index(
+            [
+                ("username", ASCENDING),
+                ("email", ASCENDING),
+                ("mobile", ASCENDING),
+            ],
+            unique=True,
+        )
 
     def get_user(self, username):
         """Get user
@@ -72,19 +103,8 @@ class Store:
             int: http status code
         """
 
-        user = self.collection.find_one({"username": username})
+        user = self.user.find_one({"username": username})
         return user
-
-    def insert(self, data):
-        """Get user
-
-        Returns:
-            json: response
-            int: http status code
-        """
-
-        result = self.collection.insert_one(data)
-        return result
 
     def update_user(self, username, data):
         """Update user
@@ -96,7 +116,7 @@ class Store:
         newvalues = {"$set": data}
         user_filter = {"username": username}
 
-        result = self.collection.update_one(user_filter, newvalues)
+        result = self.user.update_one(user_filter, newvalues)
         return result
 
     def add_to_list(self, username, data):
@@ -109,5 +129,17 @@ class Store:
         newvalues = {"$push": data}
         user_filter = {"username": username}
 
-        result = self.collection.update_one(user_filter, newvalues)
+        result = self.user.update_one(user_filter, newvalues)
         return result
+
+
+store = Store()
+
+
+def get_db():
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
+    return store

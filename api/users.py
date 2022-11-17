@@ -7,11 +7,11 @@
 from datetime import datetime
 from typing import Dict
 
-from flask import Blueprint, current_app, jsonify, request, url_for
+from flask import Blueprint, current_app, g, jsonify, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from api import users_store
-from api.auth import authenticated_user, requires_auth
+from api.auth import requires_auth
+from api.db import get_db
 from api.errors import AuthError, NotFoundError
 from api.models import (
     ChangeUserPasswordRequest,
@@ -20,6 +20,7 @@ from api.models import (
     validate_model,
 )
 
+store = get_db()
 users = Blueprint("users", __name__)
 
 
@@ -39,7 +40,7 @@ def user_response(user: Dict):
     return user
 
 
-@users.route("/users/<username>", methods=["GET"])
+@users.route("/users/me", methods=["GET"])
 @requires_auth
 def get_user_response(username):
     """Get user
@@ -49,15 +50,6 @@ def get_user_response(username):
         int: http status code
     """
 
-    if authenticated_user["username"] != username:
-        raise AuthError(
-            {
-                "code": "unauthorized",
-                "description": "the authenticated user is not authorized"
-                " to view this resource",
-            }
-        )
-
     user = get_user(username)
 
     response = jsonify(user_response(user))
@@ -65,7 +57,7 @@ def get_user_response(username):
     return response
 
 
-@users.route("/users/<username>", methods=["PUT"])
+@users.route("/users/me", methods=["PUT"])
 @requires_auth
 def update_user_info(username):
     """Get user
@@ -75,7 +67,7 @@ def update_user_info(username):
         int: http status code
     """
 
-    if authenticated_user["username"] != username:
+    if g.authenticated_user["username"] != username:
         raise AuthError(
             {
                 "code": "unauthorized",
@@ -91,7 +83,7 @@ def update_user_info(username):
     # If not valid pydantic.ValidationError is raised
     validate_model(UpdateUserRequest, body)
 
-    rsp = users_store.update_user(username, body)
+    rsp = store.update_user(username, body)
 
     response = jsonify(rsp.upserted_id)
     response.headers["Location"] = url_for(
@@ -111,7 +103,7 @@ def update_user_password(username):
         int: http status code
     """
 
-    if authenticated_user["username"] != username:
+    if g.authenticated_user["username"] != username:
         raise AuthError(
             {
                 "code": "unauthorized",
@@ -135,7 +127,7 @@ def update_user_password(username):
 
     password = {"hashed_password": generate_password_hash(body["new"])}
 
-    rsp = users_store.update_user(username, password)
+    rsp = store.update_user(username, password)
 
     response = jsonify(rsp.upserted_id)
     response.status_code = 200
@@ -149,7 +141,7 @@ def get_user(username):
         json: response
         int: http status code
     """
-    user = users_store.get_user(username)
+    user = store.get_user(username)
     if user is None:
         raise NotFoundError(
             {"code": "user_not_found", "description": "the resource was not found"}
@@ -177,7 +169,7 @@ def new_user():
     body["created_at"] = datetime.now()
 
     # Unique constraint checked using pymongo.errors.DuplicateKeyError
-    users_store.insert(body)
+    store.user.insert_one(body)
 
     # Remove password and hashed_paswords from user object
     response = user_response(body)
@@ -200,7 +192,7 @@ def add_payment_method(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = users_store.add_to_list(
+    rsp = store.add_to_list(
         username=username, data={"payment_methods": payment_method_data}
     )
 
@@ -217,7 +209,7 @@ def add_transaction(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = users_store.add_to_list(
+    rsp = store.add_to_list(
         username=username, data={"transactions": payment_method_data}
     )
 
@@ -234,6 +226,6 @@ def add_contract(username, id_contract):
     Returns:
         _type_: _description_
     """
-    rsp = users_store.add_to_list(username=username, data={"contracts": id_contract})
+    rsp = store.add_to_list(username=username, data={"contracts": id_contract})
 
     return rsp

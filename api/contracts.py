@@ -9,10 +9,11 @@ from datetime import datetime
 from bson import ObjectId
 from flask import Blueprint, current_app, jsonify, request, url_for
 
-from api import users_store
 from api.auth import requires_auth
+from api.db import get_db
 from api.errors import AuthError, ConflictError, NotFoundError
 
+users_store = get_db()
 contracts = Blueprint("contracts", __name__)
 
 
@@ -110,19 +111,18 @@ def send_invitation(username, contract_id):
         )
 
     invitation = query_user_invitations(new_member_username, contract_id)
-    current_app.logger.debug(bool(invitation))
 
     if invitation:
         raise ConflictError(
             {
                 "code": "conflict",
-                "description": "The user is already invited to this contract",
+                "description": "The user was already invited to this contract. Waiting for acceptance.",
             }
         )
 
     contract_data = {
-        "contracts.invitations": {
-            "contract": {"_id": contract_id},
+        "invitations": {
+            "contract": {"_id": ObjectId(contract_id)},
             "created_at": datetime.now(),
             "invited_by": username,
         }
@@ -206,7 +206,7 @@ def query_contract(username, contract_id):
         }
     ]
 
-    aggregate_response = users_store.collection.aggregate(aggregate)
+    aggregate_response = users_store.user.aggregate(aggregate)
 
     aggregate_response = aggregate_response.next()
 
@@ -231,16 +231,22 @@ def query_user_invitations(username, contract_id):
         {
             "$match": {
                 "$and": [
-                    {"contracts.invitations.contract._id": ObjectId(contract_id)},
+                    {
+                        "invitations": {
+                            "$elemMatch": {
+                                "contract._id": {"$eq": ObjectId(contract_id)}
+                            }
+                        }
+                    },
                     {"username": username},
                 ]
             }
         },
-        {"$limit": 1},
+        # {"$limit": 1},
     ]
 
     invitations = []
-    for invitation in users_store.collection.aggregate(aggregate):
+    for invitation in users_store.user.aggregate(aggregate):
         invitations.append(invitation)
 
     return invitations
