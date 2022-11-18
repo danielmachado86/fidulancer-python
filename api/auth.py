@@ -84,6 +84,6 @@ def requires_auth(func):
                 }
             ) from exc
         g.authenticated_user = payload
-        return func(payload["username"], *args, **kwargs)
+        return func(*args, **kwargs)
 
     return wrapper

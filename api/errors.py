@@ -27,6 +27,18 @@ class NotFoundError(Exception):
 
 
 # Format error response and append status code.
+class InternalError(Exception):
+    """
+    An AuthError is raised whenever the authentication failed.
+    """
+
+    def __init__(self, error: Dict[str, str]):
+        super().__init__()
+        self.error = error
+        self.status_code = 500
+
+
+# Format error response and append status code.
 class ConflictError(Exception):
     """
     An AuthError is raised whenever the authentication failed.

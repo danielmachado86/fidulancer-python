@@ -5,6 +5,7 @@ import datetime
 from bson import ObjectId, json_util
 from flask import Flask
 from flask.json.provider import DefaultJSONProvider
+from flask_pymongo import PyMongo
 from pymongo import ASCENDING, MongoClient
 from pymongo.command_cursor import CommandCursor
 
@@ -47,93 +48,91 @@ class CustomJSONProvider(DefaultJSONProvider):
         return base(self, obj)
 
 
-class Store:
-    """Create database"""
+# class Store:
+#     """Create database"""
 
-    def __init__(self) -> None:
-        self.user = None
-        self.session = None
+#     def __init__(self) -> None:
+#         self.user = None
+#         self.session = None
 
-    def init_app(self, app: Flask) -> None:
-        """_summary_
+#     def init_app(self, app: Flask) -> None:
+#         """_summary_
 
-        Args:
-            app (Flask): _description_
-        """
-        if app.config.get("STORE_TYPE") == "mongodb":
+#         Args:
+#             app (Flask): _description_
+#         """
 
-            client = MongoClient(
-                host=app.config.get("MONGO_URL"),
-                port=app.config.get("MONGO_PORT"),
-                username=app.config.get("MONGO_USER"),
-                password=app.config.get("MONGO_PASSWORD"),
-                connect=False,
-            )
+#         client = MongoClient(
+#             host=app.config.get("MONGO_URI"),
+#             port=app.config.get("MONGO_PORT"),
+#             username=app.config.get("MONGO_USER"),
+#             password=app.config.get("MONGO_PASSWORD"),
+#             connect=False,
+#         )
 
-            database_name = app.config.get("MONGO_DATABASE")
-            database = client[database_name]
+#         database_name = app.config.get("MONGO_DATABASE")
+#         database = client[database_name]
 
-            self.user = database.get_collection("user")
-            self.session = database.get_collection("session")
+#         self.user = database.get_collection("user")
+#         self.session = database.get_collection("session")
 
-            self.create_user_indexes()
-
-        app.json = CustomJSONProvider(app)
-
-    def create_user_indexes(self):
-        """_summary_
-
-        Args:
-            attribute (str): _description_
-        """
-        self.user.create_index(
-            [
-                ("username", ASCENDING),
-                ("email", ASCENDING),
-                ("mobile", ASCENDING),
-            ],
-            unique=True,
-        )
-
-    def get_user(self, username):
-        """Get user
-
-        Returns:
-            json: response
-            int: http status code
-        """
-
-        user = self.user.find_one({"username": username})
-        return user
-
-    def update_user(self, username, data):
-        """Update user
-
-        Returns:
-            json: response
-            int: http status code
-        """
-        newvalues = {"$set": data}
-        user_filter = {"username": username}
-
-        result = self.user.update_one(user_filter, newvalues)
-        return result
-
-    def add_to_list(self, username, data):
-        """Update user
-
-        Returns:
-            json: response
-            int: http status code
-        """
-        newvalues = {"$push": data}
-        user_filter = {"username": username}
-
-        result = self.user.update_one(user_filter, newvalues)
-        return result
+#         self.create_user_indexes()
 
 
-store = Store()
+#     def create_user_indexes(self):
+#         """_summary_
+
+#         Args:
+#             attribute (str): _description_
+#         """
+#         self.user.create_index(
+#             [
+#                 ("username", ASCENDING),
+#                 ("email", ASCENDING),
+#                 ("mobile", ASCENDING),
+#             ],
+#             unique=True,
+#         )
+
+#     def get_user(self, username):
+#         """Get user
+
+#         Returns:
+#             json: response
+#             int: http status code
+#         """
+
+#         user = self.user.find_one({"username": username})
+#         return user
+
+#     def update_user(self, username, data):
+#         """Update user
+
+#         Returns:
+#             json: response
+#             int: http status code
+#         """
+#         newvalues = {"$set": data}
+#         user_filter = {"username": username}
+
+#         result = self.user.update_one(user_filter, newvalues)
+#         return result
+
+#     def add_to_list(self, username, data):
+#         """Update user
+
+#         Returns:
+#             json: response
+#             int: http status code
+#         """
+#         newvalues = {"$push": data}
+#         user_filter = {"username": username}
+
+#         result = self.user.update_one(user_filter, newvalues)
+#         return result
+
+
+store = PyMongo()
 
 
 def get_db():

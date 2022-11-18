@@ -10,8 +10,8 @@ from typing import Dict
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import api
 from api.auth import requires_auth
-from api.db import get_db
 from api.errors import AuthError, NotFoundError
 from api.models import (
     ChangeUserPasswordRequest,
@@ -20,7 +20,6 @@ from api.models import (
     validate_model,
 )
 
-store = get_db()
 users = Blueprint("users", __name__)
 
 
@@ -83,7 +82,7 @@ def update_user_info(username):
     # If not valid pydantic.ValidationError is raised
     validate_model(UpdateUserRequest, body)
 
-    rsp = store.update_user(username, body)
+    rsp = update_user(username, body)
 
     response = jsonify(rsp.upserted_id)
     response.headers["Location"] = url_for(
@@ -91,6 +90,20 @@ def update_user_info(username):
     )
     response.status_code = 200
     return response
+
+
+def update_user(username, data):
+    """Update user
+
+    Returns:
+        json: response
+        int: http status code
+    """
+    newvalues = {"$set": data}
+    user_filter = {"username": username}
+
+    result = api.db.store.db.get_collection("user").update_one(user_filter, newvalues)
+    return result
 
 
 @users.route("/users/<username>/password", methods=["POST"])
@@ -127,7 +140,7 @@ def update_user_password(username):
 
     password = {"hashed_password": generate_password_hash(body["new"])}
 
-    rsp = store.update_user(username, password)
+    rsp = update_user(username, password)
 
     response = jsonify(rsp.upserted_id)
     response.status_code = 200
@@ -141,7 +154,7 @@ def get_user(username):
         json: response
         int: http status code
     """
-    user = store.get_user(username)
+    user = api.db.store.db.get_collection("user").find_one({"username": username})
     if user is None:
         raise NotFoundError(
             {"code": "user_not_found", "description": "the resource was not found"}
@@ -169,7 +182,7 @@ def new_user():
     body["created_at"] = datetime.now()
 
     # Unique constraint checked using pymongo.errors.DuplicateKeyError
-    store.user.insert_one(body)
+    api.db.store.db.get_collection("user").insert_one(body)
 
     # Remove password and hashed_paswords from user object
     response = user_response(body)
@@ -182,6 +195,20 @@ def new_user():
     return response
 
 
+def add_to_list(username, data):
+    """Update user
+
+    Returns:
+        json: response
+        int: http status code
+    """
+    newvalues = {"$push": data}
+    user_filter = {"username": username}
+
+    result = api.db.store.db.get_collection("user").update_one(user_filter, newvalues)
+    return result
+
+
 def add_payment_method(username, payment_method_data):
     """_summary_
 
@@ -192,9 +219,7 @@ def add_payment_method(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = store.add_to_list(
-        username=username, data={"payment_methods": payment_method_data}
-    )
+    rsp = add_to_list(username=username, data={"payment_methods": payment_method_data})
 
     return rsp
 
@@ -209,9 +234,7 @@ def add_transaction(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = store.add_to_list(
-        username=username, data={"transactions": payment_method_data}
-    )
+    rsp = add_to_list(username=username, data={"transactions": payment_method_data})
 
     return rsp
 
@@ -226,6 +249,6 @@ def add_contract(username, id_contract):
     Returns:
         _type_: _description_
     """
-    rsp = store.add_to_list(username=username, data={"contracts": id_contract})
+    rsp = add_to_list(username=username, data={"contracts": id_contract})
 
     return rsp

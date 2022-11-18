@@ -7,7 +7,7 @@ Returns:
 
 from flask import Flask
 
-from api.db import get_db
+from api.db import CustomJSONProvider, store
 from config import Config
 
 
@@ -23,8 +23,8 @@ def create_app(config_class=Config):
 
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.json = CustomJSONProvider(app)
 
-    store = get_db()
     store.init_app(app)
 
     from api.errors import errors  # pylint: disable=import-outside-toplevel
