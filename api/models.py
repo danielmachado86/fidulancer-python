@@ -3,57 +3,43 @@
 """
 
 import datetime
-from typing import Dict
 
 from bson.objectid import ObjectId as bson_ObjectId
-from pydantic import BaseModel, EmailStr  # pylint: disable=no-name-in-module
+from pydantic import BaseModel, EmailStr, validator
+from pydantic.dataclasses import dataclass
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
-class Config:
-    """Config pydantic"""
-
-    validate_assignment = True
-
-
-class ObjectId(bson_ObjectId):
-    """_summary_
-
-    Args:
-        bson_ObjectId (_type_): _description_
-
-    Raises:
-        TypeError: _description_
-
-    Returns:
-        _type_: _description_
-
-    Yields:
-        _type_: _description_
-    """
-
+class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
 
     @classmethod
-    def validate(cls, obj):
-        """_summary_
-
-        Args:
-            v (_type_): _description_
-
-        Raises:
-            TypeError: _description_
-
-        Returns:
-            _type_: _description_
-        """
+    def validate(cls, obj):  # pylint: disable=missing-function-docstring
         if not isinstance(obj, bson_ObjectId):
             raise TypeError("ObjectId required")
         return str(obj)
 
 
-class CreateUserRequest(BaseModel):
+class PaswordValidator(BaseModel):
+    """Model definition used in the request for user creation
+
+    Args:
+        BaseModel: Pydantic parent class
+    """
+
+    password: str
+
+    @validator("password")
+    def hash_password(cls, password: str) -> str:
+        return generate_password_hash(password)
+
+    def get_data(self):
+        return self.dict()
+
+
+class UserModelValidator(BaseModel):
     """Model definition used in the request for user creation
 
     Args:
@@ -64,10 +50,29 @@ class CreateUserRequest(BaseModel):
     username: str
     email: EmailStr
     mobile: str
-    password: str
+    created_at: datetime.datetime = None
+
+    @validator("username")
+    def username_alphanumeric(cls, v):
+        assert v.isalnum(), "must be alphanumeric"
+        return v
+
+    @validator("name")
+    def name_must_contain_space(cls, v):
+        if " " not in v:
+            raise ValueError("must contain a space")
+        return v.title()
+
+    @validator("created_at", pre=True, always=True)
+    def set_created_at_now(cls, v):
+        return v or datetime.datetime.now()
+
+    def get_data(self):
+        return self.dict()
 
 
-class UpdateUserRequest(BaseModel):
+@dataclass
+class UpdateUserModel(BaseModel):
     """Model definition used in the request for user creation
 
     Args:
@@ -79,7 +84,8 @@ class UpdateUserRequest(BaseModel):
     mobile: str
 
 
-class ChangeUserPasswordRequest(BaseModel):
+@dataclass
+class ChangeUserPasswordModel(BaseModel):
     """Model definition used in the request for user creation
 
     Args:
@@ -90,6 +96,7 @@ class ChangeUserPasswordRequest(BaseModel):
     new: str
 
 
+@dataclass
 class UserResponse(BaseModel):
     """_summary_
 
@@ -104,16 +111,3 @@ class UserResponse(BaseModel):
     mobile: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
-
-
-def validate_model(model: BaseModel, data: Dict) -> None:
-    """_summary_
-
-    Args:
-        model (BaseModel): Pydantic model class
-        data (Dict): data to be validated
-
-    Returns:
-        List[Dict]: errors to be included in response
-    """
-    model(**data)

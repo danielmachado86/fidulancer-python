@@ -122,21 +122,21 @@ def handle_payment_error(ex: PaymentGatewayError) -> Response:
     return response
 
 
-@errors.app_errorhandler(HTTPException)
-def http_error(error):
-    """_summary_
+# @errors.app_errorhandler(HTTPException)
+# def http_error(error):
+#     """_summary_
 
-    Args:
-        error (_type_): _description_
+#     Args:
+#         error (_type_): _description_
 
-    Returns:
-        _type_: _description_
-    """
-    return {
-        "code": error.code,
-        "message": error.name,
-        "description": error.description,
-    }, error.code
+#     Returns:
+#         _type_: _description_
+#     """
+#     return {
+#         "code": error.code,
+#         "message": error.name,
+#         "description": error.description,
+#     }, error.code
 
 
 @errors.app_errorhandler(ValidationError)

@@ -11,7 +11,7 @@ from api.db import CustomJSONProvider, store
 from config import Config
 
 
-def create_app(config_class=Config):
+def create_app(config_class=Config) -> Flask:
     """_summary_
 
     Args:

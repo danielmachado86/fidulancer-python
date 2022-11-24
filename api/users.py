@@ -4,7 +4,6 @@
 
 """
 
-from datetime import datetime
 from typing import Dict
 
 from flask import Blueprint, current_app, g, jsonify, request, url_for
@@ -13,12 +12,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import api
 from api.auth import requires_auth
 from api.errors import AuthError, NotFoundError
-from api.models import (
-    ChangeUserPasswordRequest,
-    CreateUserRequest,
-    UpdateUserRequest,
-    validate_model,
-)
+from api.models import ChangeUserPasswordModel  # validate_model,
+from api.models import PaswordValidator, UpdateUserModel, UserModelValidator
 
 users = Blueprint("users", __name__)
 
@@ -80,7 +75,7 @@ def update_user_info(username):
     body = request.get_json()
 
     # If not valid pydantic.ValidationError is raised
-    validate_model(UpdateUserRequest, body)
+    UpdateUserModel(**body)
 
     rsp = update_user(username, body)
 
@@ -130,7 +125,7 @@ def update_user_password(username):
     body = request.get_json()
 
     # If not valid pydantic.ValidationError is raised
-    validate_model(ChangeUserPasswordRequest, body)
+    ChangeUserPasswordModel(**body)
 
     match = check_password_hash(user.get("hashed_password"), body["old"])
     if not match:
@@ -170,27 +165,27 @@ def new_user():
         json: response
         int: http status code
     """
-
     current_app.logger.info("Creating new item")
     body = request.get_json()
 
+    password_validator = PaswordValidator(**body)
+    password = password_validator.get_data()
+
     # If not valid pydantic.ValidationError is raised
-    validate_model(CreateUserRequest, body)
+    info_validator = UserModelValidator(**body)
+    user_info = info_validator.get_data()
 
-    body["hashed_password"] = generate_password_hash(body["password"])
-
-    body["created_at"] = datetime.now()
-
-    # Unique constraint checked using pymongo.errors.DuplicateKeyError
-    api.db.store.db.get_collection("user").insert_one(body)
+    user = dict(user_info)
+    user.update(password)
+    # Unique constraint checked using mongodb indexes
+    api.db.store.db.get_collection("user").insert_one(user)
 
     # Remove password and hashed_paswords from user object
-    response = user_response(body)
 
-    response = jsonify(response)
+    response = jsonify(user_info)
     response.status_code = 201
     response.headers["Location"] = url_for(
-        "users.get_user_response", username=body["username"]
+        "users.get_user_response", username=user_info["username"]
     )
     return response
 
