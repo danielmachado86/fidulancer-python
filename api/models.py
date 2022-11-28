@@ -6,8 +6,9 @@ import datetime
 
 from bson.objectid import ObjectId as bson_ObjectId
 from pydantic import BaseModel, EmailStr, validator
-from pydantic.dataclasses import dataclass
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from api import get_date
 
 
 class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring
@@ -32,6 +33,7 @@ class PaswordValidator(BaseModel):
     password: str
 
     @validator("password")
+    @classmethod
     def hash_password(cls, password: str) -> str:
         return generate_password_hash(password)
 
@@ -53,25 +55,27 @@ class UserModelValidator(BaseModel):
     created_at: datetime.datetime = None
 
     @validator("username")
+    @classmethod
     def username_alphanumeric(cls, v):
         assert v.isalnum(), "must be alphanumeric"
         return v
 
     @validator("name")
+    @classmethod
     def name_must_contain_space(cls, v):
         if " " not in v:
             raise ValueError("must contain a space")
         return v.title()
 
     @validator("created_at", pre=True, always=True)
+    @classmethod
     def set_created_at_now(cls, v):
-        return v or datetime.datetime.now()
+        return v or get_date()
 
     def get_data(self):
         return self.dict()
 
 
-@dataclass
 class UpdateUserModel(BaseModel):
     """Model definition used in the request for user creation
 
@@ -84,7 +88,6 @@ class UpdateUserModel(BaseModel):
     mobile: str
 
 
-@dataclass
 class ChangeUserPasswordModel(BaseModel):
     """Model definition used in the request for user creation
 
@@ -96,7 +99,6 @@ class ChangeUserPasswordModel(BaseModel):
     new: str
 
 
-@dataclass
 class UserResponse(BaseModel):
     """_summary_
 

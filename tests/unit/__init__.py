@@ -1,11 +1,14 @@
+import datetime
 from unittest.mock import patch
 
 import pytest
 from mongomock import MongoClient
 
 import api
-from api.app import create_app
+from api.app import app_date, create_app
 from api.db import CustomJSONProvider
+
+FAKE_TIME = datetime.datetime(2020, 12, 25, 17, 5, 55)
 
 
 class PyMongoMock(MongoClient):
@@ -25,7 +28,10 @@ def app():
         "store",
         PyMongoMock(),
     ):
-        yield create_app()
+        app = create_app()
+        app_date.new_date(FAKE_TIME)
+        app.config.update({"TESTING": True})
+        yield app
 
     # clean up / reset resources here
 

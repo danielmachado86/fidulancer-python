@@ -5,10 +5,27 @@ Returns:
 """
 
 
+import datetime
+
 from flask import Flask
 
 from api.db import CustomJSONProvider, store
 from config import Config
+
+
+class Date:
+    def __init__(self) -> None:
+        self.date = datetime.datetime.now()
+
+    def new_date(self, date):
+        self.date = date
+
+
+app_date = Date()
+
+
+def get_date():
+    return app_date.date
 
 
 def create_app(config_class=Config) -> Flask:
