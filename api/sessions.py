@@ -7,7 +7,9 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
 import api
-from api.users import user_response
+from api.app import get_app_date, get_app_objectid
+from api.errors import BadRequestError
+from api.models import CredentialsModel, UserResponse
 
 sessions = Blueprint("sessions", __name__)
 
@@ -25,6 +27,18 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(o, datetime.datetime):
             return str(o)
         return json.JSONEncoder.default(self, o)
+
+
+def check_user_password(username, password):
+    if username is None or password is None:
+        abort(400, "username and password are required")
+    user_data = api.db.store.db.get_collection("user").find_one({"username": username})
+    if user_data is None or not check_password_hash(
+        user_data.get("password"), password
+    ):
+        return abort(401, "username and password incorrect")
+    user_response = UserResponse(**user_data)
+    return user_response.get_data()
 
 
 @sessions.route("/sessions/refresher", methods=["POST"])
@@ -82,14 +96,16 @@ def new_session():
         int: http status code
     """
     data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
-    if username is None or password is None:
-        abort(400, "username and password are required")
-    user = api.db.store.db.get_collection("user").get_user(username)
-    if user is None or not check_password_hash(user.get("hashed_password"), password):
-        return abort(401, "username and password incorrect")
-    access_token_expires_at = datetime.utcnow() + timedelta(
+
+    check_empty_body(data)
+
+    credentials = CredentialsModel(**data).get_data()
+    username = credentials["username"]
+    password = credentials["password"]
+
+    user = check_user_password(username, password)
+
+    access_token_expires_at = get_app_date() + timedelta(
         minutes=current_app.config["ACCESS_TOKEN_MINUTES"]
     )
     access_token = jwt.encode(
@@ -102,9 +118,9 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    session_id = ObjectId()
+    session_id = get_app_objectid()
 
-    refresh_token_expires_at = datetime.utcnow() + timedelta(
+    refresh_token_expires_at = get_app_date() + timedelta(
         days=current_app.config["REFRESH_TOKEN_DAYS"]
     )
     refresh_token = jwt.encode(
@@ -118,7 +134,7 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    result = api.db.store.db.get_collection("session").insert_one(
+    api.db.store.db.get_collection("session").insert_one(
         {
             "_id": session_id,
             "username": username,
@@ -132,14 +148,21 @@ def new_session():
 
     response = jsonify(
         {
-            "id": result.inserted_id,
+            "id": session_id,
             "access_token": access_token,
             "access_token_expires_ at": access_token_expires_at,
             "refresh_token": refresh_token,
             "refresh_token_expires_ at": refresh_token_expires_at,
-            "user": user_response(user),
+            "user": user,
             "is_active": True,
         }
     )
     response.status_code = 201
     return response
+
+
+def check_empty_body(data):
+    if not isinstance(data, dict):
+        raise BadRequestError(
+            {"code": "empty-request", "message": "request body must be a valid json"}
+        )

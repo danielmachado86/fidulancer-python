@@ -7,6 +7,7 @@ Returns:
 
 import datetime
 
+import bson
 from flask import Flask
 
 from api.db import CustomJSONProvider, store
@@ -15,17 +16,30 @@ from config import Config
 
 class Date:
     def __init__(self) -> None:
-        self.date = datetime.datetime.now()
+        self.value = datetime.datetime.now()
 
     def new_date(self, date):
-        self.date = date
+        self.value = date
+
+
+class ObjectId:
+    def __init__(self) -> None:
+        self.value = bson.ObjectId()
+
+    def new_value(self, oid):
+        self.value = bson.ObjectId(oid)
 
 
 app_date = Date()
+app_objectid = ObjectId()
 
 
-def get_date():
-    return app_date.date
+def get_app_date():
+    return app_date.value
+
+
+def get_app_objectid():
+    return app_objectid.value
 
 
 def create_app(config_class=Config) -> Flask:

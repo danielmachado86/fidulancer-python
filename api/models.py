@@ -6,9 +6,10 @@ import datetime
 
 from bson.objectid import ObjectId as bson_ObjectId
 from pydantic import BaseModel, EmailStr, validator
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
 
-from api import get_date
+from api import get_app_date
+from api.app import get_app_objectid
 
 
 class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring
@@ -20,39 +21,32 @@ class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring
     def validate(cls, obj):  # pylint: disable=missing-function-docstring
         if not isinstance(obj, bson_ObjectId):
             raise TypeError("ObjectId required")
-        return str(obj)
+        return obj
 
 
-class PaswordValidator(BaseModel):
+class CreateUserValidator(BaseModel):
     """Model definition used in the request for user creation
 
     Args:
         BaseModel: Pydantic parent class
     """
 
-    password: str
-
-    @validator("password")
-    @classmethod
-    def hash_password(cls, password: str) -> str:
-        return generate_password_hash(password)
-
-    def get_data(self):
-        return self.dict()
-
-
-class UserModelValidator(BaseModel):
-    """Model definition used in the request for user creation
-
-    Args:
-        BaseModel: Pydantic parent class
-    """
-
+    id: ObjectId = None
     name: str
     username: str
     email: EmailStr
     mobile: str
+    password: str
     created_at: datetime.datetime = None
+
+    class Config:
+        validate_asignment = True
+        fields = {"id": "_id"}
+
+    @validator("id", pre=True, always=True)
+    @classmethod
+    def set_id(cls, v):
+        return v or get_app_objectid()
 
     @validator("username")
     @classmethod
@@ -70,10 +64,15 @@ class UserModelValidator(BaseModel):
     @validator("created_at", pre=True, always=True)
     @classmethod
     def set_created_at_now(cls, v):
-        return v or get_date()
+        return v or get_app_date()
 
-    def get_data(self):
-        return self.dict()
+    @validator("password")
+    @classmethod
+    def hash_password(cls, password: str) -> str:
+        return generate_password_hash(password)
+
+    def get_data(self) -> dict:
+        return self.dict(by_alias=True)
 
 
 class UpdateUserModel(BaseModel):
@@ -106,10 +105,33 @@ class UserResponse(BaseModel):
         BaseModel (_type_): _description_
     """
 
-    _id: ObjectId
+    id: ObjectId
     name: str
     username: str
     email: EmailStr
     mobile: str
     created_at: datetime.datetime
-    updated_at: datetime.datetime
+
+    class Config:
+        validate_asignment = True
+        fields = {"id": "_id"}
+
+    def get_data(self) -> dict:
+        return self.dict(by_alias=True)
+
+
+class CredentialsModel(BaseModel):
+    """_summary_
+
+    Args:
+        BaseModel (_type_): _description_
+    """
+
+    username: str
+    password: str
+
+    class Config:
+        validate_asignment = True
+
+    def get_data(self) -> dict:
+        return self.dict(by_alias=True)

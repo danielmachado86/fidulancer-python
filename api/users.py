@@ -11,9 +11,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import api
 from api.auth import requires_auth
-from api.errors import AuthError, NotFoundError
+from api.errors import AuthError, BadRequestError, NotFoundError
 from api.models import ChangeUserPasswordModel  # validate_model,
-from api.models import PaswordValidator, UpdateUserModel, UserModelValidator
+from api.models import CreateUserValidator, UpdateUserModel, UserResponse
 
 users = Blueprint("users", __name__)
 
@@ -166,26 +166,30 @@ def new_user():
         int: http status code
     """
     current_app.logger.info("Creating new item")
-    body = request.get_json()
 
-    password_validator = PaswordValidator(**body)
-    password = password_validator.get_data()
+    body = request.get_json()
+    if not isinstance(body, dict):
+        raise BadRequestError(
+            {"code": "empty-request", "message": "request body must be a valid json"}
+        )
+
+    # password_validator = PaswordValidator(**body)
+    # password = password_validator.get_data()
 
     # If not valid pydantic.ValidationError is raised
-    info_validator = UserModelValidator(**body)
-    user_info = info_validator.get_data()
+    model_validation = CreateUserValidator(**body)
+    user = model_validation.get_data()
 
-    user = dict(user_info)
-    user.update(password)
     # Unique constraint checked using mongodb indexes
     api.db.store.db.get_collection("user").insert_one(user)
 
-    # Remove password and hashed_paswords from user object
+    model_response = UserResponse(**user)
+    user_resp = model_response.get_data()
 
-    response = jsonify(user_info)
+    response = jsonify(user_resp)
     response.status_code = 201
     response.headers["Location"] = url_for(
-        "users.get_user_response", username=user_info["username"]
+        "users.get_user_response", username=user["username"]
     )
     return response
 

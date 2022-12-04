@@ -3,10 +3,31 @@
 
 import pytest
 
+import api
+from api.models import CreateUserValidator
 from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import client  # pylint: disable=unused-import
-from tests.unit import FAKE_OID, FAKE_TIME
 from tests.unit.helpers import u_test_http_response
+
+
+@pytest.fixture(autouse=True)
+def add_users(app):
+    """_summary_
+
+    Args:
+        app (_type_): _description_
+    """
+    user_data = {
+        "name": "Jimena Lopez",
+        "username": "jimenalogo",
+        "email": "jimenalogo@gmail.com",
+        "mobile": "+573046628057",
+        "password": "secret",
+    }
+    user = CreateUserValidator(**user_data).get_data()
+    api.db.store.db.get_collection("user").insert_one(user)
+
+    yield
 
 
 @pytest.mark.parametrize(
@@ -14,21 +35,26 @@ from tests.unit.helpers import u_test_http_response
     [
         (
             {
-                "name": "Jimena Lopez",
                 "username": "jimenalogo",
-                "email": "jimenalogo@gmail.com",
-                "mobile": "+573046628057",
                 "password": "secret",
             },
             {
                 "status_code": 201,
                 "body": {
-                    "_id": FAKE_OID,
-                    "name": "Jimena Lopez",
-                    "username": "jimenalogo",
-                    "email": "jimenalogo@gmail.com",
-                    "mobile": "+573046628057",
-                    "created_at": FAKE_TIME.isoformat(),
+                    "access_token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImppbWVuYWxvZ28iLCJleHAiOjE2NzE5ODg4NTV9.VL_SsLk0t4HIRR6sPiF_5ambvlpQ-xfoUgl5GMvc5-0erZFHIWYnnRnNi12UvY6lA9yTp1FCaOFWXJ8bX5LoOw",
+                    "access_token_expires_ at": "2022-12-25T17:20:55",
+                    "id": "6385248afe09c73d411fda0a",
+                    "is_active": True,
+                    "refresh_token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzODUyNDhhZmUwOWM3M2Q0MTFmZGEwYSIsInVzZXJuYW1lIjoiamltZW5hbG9nbyIsImV4cCI6MTY3NDU3OTk1NX0.WQVKFCB46ZZWnNcNNBDikw-ExGQroIuMNJxQ1C0WNE0rBP0pClMvUpusbsJemzxV0Yu_EoUKopGkUTBCuP-unA",
+                    "refresh_token_expires_ at": "2023-01-24T17:05:55",
+                    "user": {
+                        "_id": "6385248afe09c73d411fda0a",
+                        "created_at": "2022-12-25T17:05:55",
+                        "email": "jimenalogo@gmail.com",
+                        "mobile": "+573046628057",
+                        "name": "Jimena Lopez",
+                        "username": "jimenalogo",
+                    },
                 },
             },
         ),
@@ -37,10 +63,10 @@ from tests.unit.helpers import u_test_http_response
         "ok",
     ],
 )
-def test_user_registration_ok(
+def test_new_user_session_ok(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/users", data, expected)
+    u_test_http_response(client, "/v1/sessions", data, expected)
 
 
 @pytest.mark.parametrize(
@@ -94,10 +120,10 @@ def test_user_registration_ok(
         "no_json_body_int",
     ],
 )
-def test_user_registration_error_request_body(
+def test_new_user_session_error_request_body(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/users", data, expected)
+    u_test_http_response(client, "/v1/sessions", data, expected)
 
 
 @pytest.mark.parametrize(
@@ -108,31 +134,13 @@ def test_user_registration_error_request_body(
             {
                 "status_code": 400,
                 "body": [
-                    {"field": "name", "message": "field required"},
                     {"field": "username", "message": "field required"},
-                    {"field": "email", "message": "field required"},
-                    {"field": "mobile", "message": "field required"},
                     {"field": "password", "message": "field required"},
                 ],
             },
         ),
         (
             {
-                "username": "jimenalogo",
-                "email": "jimenalogo@gmail.com",
-                "mobile": "+573046628057",
-                "password": "secret",
-            },
-            {
-                "status_code": 400,
-                "body": [{"field": "name", "message": "field required"}],
-            },
-        ),
-        (
-            {
-                "name": "Jimena Lopez",
-                "email": "jimenalogo@gmail.com",
-                "mobile": "+573046628057",
                 "password": "secret",
             },
             {
@@ -142,34 +150,7 @@ def test_user_registration_error_request_body(
         ),
         (
             {
-                "name": "Jimena Lopez",
                 "username": "jimenalogo",
-                "mobile": "+573046628057",
-                "password": "secret",
-            },
-            {
-                "status_code": 400,
-                "body": [{"field": "email", "message": "field required"}],
-            },
-        ),
-        (
-            {
-                "name": "Jimena Lopez",
-                "username": "jimenalogo",
-                "email": "jimenalogo@gmail.com",
-                "password": "secret",
-            },
-            {
-                "status_code": 400,
-                "body": [{"field": "mobile", "message": "field required"}],
-            },
-        ),
-        (
-            {
-                "name": "Jimena Lopez",
-                "username": "jimenalogo",
-                "email": "jimenalogo@gmail.com",
-                "mobile": "+573046628057",
             },
             {
                 "status_code": 400,
@@ -179,14 +160,11 @@ def test_user_registration_error_request_body(
     ],
     ids=[
         "missing_all",
-        "missing_name",
         "missing_username",
-        "missing_email",
-        "missing_mobile",
         "missing_password",
     ],
 )
-def test_user_registration_error_missing_fields(
+def test_new_user_session_error_missing_fields(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/users", data, expected)
+    u_test_http_response(client, "/v1/sessions", data, expected)

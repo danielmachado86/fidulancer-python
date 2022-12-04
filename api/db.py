@@ -3,10 +3,8 @@
 import datetime
 
 from bson import ObjectId, json_util
-from flask import Flask
 from flask.json.provider import DefaultJSONProvider
 from flask_pymongo import PyMongo
-from pymongo import ASCENDING, MongoClient
 from pymongo.command_cursor import CommandCursor
 
 
@@ -19,6 +17,8 @@ def _convert_mongo_objects(obj):
         converted = str(obj)
     elif isinstance(obj, datetime.datetime):
         converted = obj.isoformat()
+    elif isinstance(obj, bytes):
+        converted = obj.decode("utf-8")
     return converted
 
 
@@ -42,7 +42,7 @@ class CustomJSONProvider(DefaultJSONProvider):
 
         if isinstance(
             obj,
-            (CommandCursor, ObjectId, datetime.datetime),
+            (CommandCursor, ObjectId, datetime.datetime, bytes),
         ):
             return _convert_mongo_objects(obj)
         return base(self, obj)
