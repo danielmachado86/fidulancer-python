@@ -5,10 +5,7 @@
 	"name": "Fidulancer dev environment",
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
 	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
-	"dockerComposeFile": [
-		"../docker-compose.yml",
-		"docker-compose.yml"
-	],
+	"dockerComposeFile": "docker-compose.yml",
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
 	"service": "api",
@@ -49,7 +46,7 @@
 				"njpwerner.autodocstring",
 				"eamodio.gitlens",
 				"VisualStudioExptTeam.vscodeintellicode",
-				"mongodb.mongodb-vscode"
+				"mongodb.mongodb-vscode",
 			]
 		}
 	},
@@ -61,6 +58,6 @@
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
 	"features": {
-		"fish": "latest"
+		// "fish": "latest"
 	}
 }
