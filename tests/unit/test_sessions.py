@@ -9,9 +9,11 @@ from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import client  # pylint: disable=unused-import
 from tests.unit.helpers import u_test_http_response
 
+ENDPOINT = "/v1/sessions"
+
 
 @pytest.fixture(autouse=True)
-def add_users(app):
+def add_users(app):  # pylint: disable=redefined-outer-name
     """_summary_
 
     Args:
@@ -66,7 +68,7 @@ def add_users(app):
 def test_new_user_session_ok(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/sessions", data, expected)
+    u_test_http_response(client, ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -123,7 +125,7 @@ def test_new_user_session_ok(
 def test_new_user_session_error_request_body(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/sessions", data, expected)
+    u_test_http_response(client, ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -167,4 +169,4 @@ def test_new_user_session_error_request_body(
 def test_new_user_session_error_missing_fields(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, "/v1/sessions", data, expected)
+    u_test_http_response(client, ENDPOINT, data, expected)
