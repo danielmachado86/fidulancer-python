@@ -3,33 +3,13 @@
 
 import pytest
 
-import api
+from api.app import get_app_database
 from api.models import CreateUserValidator
 from tests.unit import app  # pylint: disable=unused-import
-from tests.unit import client  # pylint: disable=unused-import
+from tests.unit import add_users, client  # pylint: disable=unused-import
 from tests.unit.helpers import u_test_http_response
 
 ENDPOINT = "/v1/sessions"
-
-
-@pytest.fixture(autouse=True)
-def add_users(app):  # pylint: disable=redefined-outer-name
-    """_summary_
-
-    Args:
-        app (_type_): _description_
-    """
-    user_data = {
-        "name": "Jimena Lopez",
-        "username": "jimenalogo",
-        "email": "jimenalogo@gmail.com",
-        "mobile": "+573046628057",
-        "password": "secret",
-    }
-    user = CreateUserValidator(**user_data).get_data()
-    api.db.store.db.get_collection("user").insert_one(user)
-
-    yield
 
 
 @pytest.mark.parametrize(
@@ -66,7 +46,7 @@ def add_users(app):  # pylint: disable=redefined-outer-name
     ],
 )
 def test_new_user_session_ok(
-    client, data, expected
+    client, data, expected, add_users
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
     u_test_http_response(client, ENDPOINT, data, expected)
 

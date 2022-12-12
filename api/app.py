@@ -9,8 +9,9 @@ import datetime
 
 import bson
 from flask import Flask
+from flask_pymongo import PyMongo
 
-from api.db import CustomJSONProvider, store
+from api.db import CustomJSONProvider
 from config import Config
 
 
@@ -18,20 +19,29 @@ class Date:
     def __init__(self) -> None:
         self.value = datetime.datetime.now()
 
-    def new_date(self, date):
-        self.value = date
+    def new_value(self, value):
+        self.value = value
 
 
 class ObjectId:
     def __init__(self) -> None:
         self.value = bson.ObjectId()
 
-    def new_value(self, oid):
-        self.value = bson.ObjectId(oid)
+    def new_value(self, value):
+        self.value = bson.ObjectId(value)
+
+
+class Database:
+    def __init__(self) -> None:
+        self.value = PyMongo()
+
+    def new_value(self, value):
+        self.value = value
 
 
 app_date = Date()
 app_objectid = ObjectId()
+app_database = Database()
 
 
 def get_app_date():
@@ -40,6 +50,10 @@ def get_app_date():
 
 def get_app_objectid():
     return app_objectid.value
+
+
+def get_app_database():
+    return app_database.value
 
 
 def create_app(config_class=Config) -> Flask:
@@ -56,7 +70,9 @@ def create_app(config_class=Config) -> Flask:
     app.config.from_object(config_class)
     app.json = CustomJSONProvider(app)
 
-    store.init_app(app)
+    db = get_app_database()
+
+    db.init_app(app)
 
     from api.errors import errors  # pylint: disable=import-outside-toplevel
 

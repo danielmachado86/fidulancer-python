@@ -3,7 +3,7 @@
 
 
 def u_test_http_response(
-    client, endpoint, data, expected
+    client, endpoint, data, expected, headers=None
 ):  # pylint: disable=redefined-outer-name
     """_summary_
 
@@ -12,7 +12,7 @@ def u_test_http_response(
         data (_type_): _description_
         expected (_type_): _description_
     """
-    response = client.post(endpoint, json=data)
+    response = client.post(endpoint, json=data, headers=headers)
     data = response.get_json()
     expected_data = expected["body"]
     data_type = type(expected_data)

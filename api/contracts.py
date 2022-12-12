@@ -7,12 +7,13 @@ Returns:
 from datetime import datetime
 
 from bson import ObjectId
-from flask import Blueprint, current_app, jsonify, request, url_for
+from flask import Blueprint, current_app, g, jsonify, request, url_for
 
 import api
+from api.app import get_app_database, get_app_date, get_app_objectid
 from api.auth import requires_auth
 from api.db import get_db
-from api.errors import AuthError, ConflictError, NotFoundError
+from api.errors import AuthError, ConflictError, InternalError, NotFoundError
 from api.users import add_to_list
 
 users_store = get_db()
@@ -21,7 +22,7 @@ contracts = Blueprint("contracts", __name__)
 
 @contracts.route("/contracts", methods=["POST"])
 @requires_auth
-def new_contract(username):
+def new_contract():
     """Creates new contract
 
     Returns:
@@ -34,16 +35,31 @@ def new_contract(username):
 
     contract = {**body}
 
-    contract_id = ObjectId()
-    contract.update(_id=contract_id, created_at=datetime.now())
+    contract_id = get_app_objectid()
+    contract.update(_id=contract_id, created_at=get_app_date())
 
-    new_contract_data = {"contracts.active": contract}
-    add_to_list(username, new_contract_data)
+    value = {"$push": {"contracts.active": contract}}
+    u_filter = {"username": g.authenticated_user["username"]}
+
+    db = get_app_database().db
+    result = db.get_collection("user").update_one(filter=u_filter, update=value)
+    if result.matched_count == 0:
+        raise InternalError(
+            {"code": "internal-error", "message": "database update error"}
+        )
+
+    contract.update(
+        users=[
+            {"username": g.authenticated_user["username"], "added_at": get_app_date()}
+        ]
+    )
 
     response = jsonify(contract)
     response.status_code = 201
     response.headers["Location"] = url_for(
-        "contracts.get_contract", contract_id=contract_id, username=username
+        "contracts.get_contract",
+        contract_id=contract_id,
+        username=g.authenticated_user["username"],
     )
     return response
 

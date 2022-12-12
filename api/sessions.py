@@ -7,8 +7,8 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
 import api
-from api.app import get_app_date, get_app_objectid
-from api.errors import BadRequestError
+from api.app import get_app_database, get_app_date, get_app_objectid
+from api.errors import BadRequestError, InternalError
 from api.models import CredentialsModel, UserResponse
 
 sessions = Blueprint("sessions", __name__)
@@ -32,7 +32,8 @@ class JSONEncoder(json.JSONEncoder):
 def check_user_password(username, password):
     if username is None or password is None:
         abort(400, "username and password are required")
-    user_data = api.db.store.db.get_collection("user").find_one({"username": username})
+    db = get_app_database().db
+    user_data = db.get_collection("user").find_one({"username": username})
     if user_data is None or not check_password_hash(
         user_data.get("password"), password
     ):
@@ -134,7 +135,8 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    api.db.store.db.get_collection("session").insert_one(
+    db = get_app_database().db
+    result = db.get_collection("session").insert_one(
         {
             "_id": session_id,
             "username": username,
@@ -145,10 +147,16 @@ def new_session():
             "expires_ at": refresh_token_expires_at,
         }
     )
+    oid = result.inserted_id
+
+    if not oid:
+        raise InternalError(
+            {"code": "internal-error", "message": "database insertion error"}
+        )
 
     response = jsonify(
         {
-            "id": session_id,
+            "id": oid,
             "access_token": access_token,
             "access_token_expires_ at": access_token_expires_at,
             "refresh_token": refresh_token,

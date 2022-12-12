@@ -5,8 +5,9 @@ import pytest
 from mongomock import MongoClient
 
 import api
-from api.app import app_date, app_objectid, create_app
+from api.app import app_database, app_date, app_objectid, create_app, get_app_database
 from api.db import CustomJSONProvider
+from api.models import CreateUserValidator
 
 pytest.register_assert_rewrite("tests.unit.helpers")
 
@@ -34,16 +35,13 @@ def app():
     Yields:
         _type_: _description_
     """
-    with patch.object(
-        api.db,
-        "store",
-        PyMongoMock(),
-    ):
-        app = create_app()  # pylint: disable=redefined-outer-name
-        app_date.new_date(FAKE_TIME)
-        app_objectid.new_value(FAKE_OID)
-        app.config.update({"TESTING": True})
-        yield app
+    app = create_app()  # pylint: disable=redefined-outer-name
+    app_date.new_value(FAKE_TIME)
+    app_objectid.new_value(FAKE_OID)
+    fake_db = PyMongoMock()
+    app_database.new_value(fake_db)
+    app.config.update({"TESTING": True})
+    yield app
 
     # clean up / reset resources here
 
@@ -63,3 +61,24 @@ def client(app):  # pylint: disable=redefined-outer-name
         # Establish an application context
         with app.app_context():
             yield testing_client  # this is where the testing happens!
+
+
+@pytest.fixture(autouse=True)
+def add_users(app):  # pylint: disable=redefined-outer-name
+    """_summary_
+
+    Args:
+        app (_type_): _description_
+    """
+    user_data = {
+        "name": "Jimena Lopez",
+        "username": "jimenalogo",
+        "email": "jimenalogo@gmail.com",
+        "mobile": "+573046628057",
+        "password": "secret",
+    }
+    user = CreateUserValidator(**user_data).get_data()
+    db = get_app_database().db
+    db.get_collection("user").insert_one(user)
+
+    yield

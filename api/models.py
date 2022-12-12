@@ -116,6 +116,11 @@ class UserResponse(BaseModel):
         validate_asignment = True
         fields = {"id": "_id"}
 
+    @validator("id", pre=True, always=True)
+    @classmethod
+    def set_id(cls, v):
+        return v
+
     def get_data(self) -> dict:
         return self.dict(by_alias=True)
 

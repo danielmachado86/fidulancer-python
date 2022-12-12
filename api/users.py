@@ -10,8 +10,9 @@ from flask import Blueprint, current_app, g, jsonify, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import api
+from api import get_app_database
 from api.auth import requires_auth
-from api.errors import AuthError, BadRequestError, NotFoundError
+from api.errors import AuthError, BadRequestError, InternalError, NotFoundError
 from api.models import ChangeUserPasswordModel  # validate_model,
 from api.models import CreateUserValidator, UpdateUserModel, UserResponse
 
@@ -181,7 +182,15 @@ def new_user():
     user = model_validation.get_data()
 
     # Unique constraint checked using mongodb indexes
-    api.db.store.db.get_collection("user").insert_one(user)
+    db = get_app_database().db
+    result = db.get_collection("user").insert_one(user)
+    oid = result.inserted_id
+
+    if not oid:
+        raise InternalError(
+            {"code": "internal-error", "message": "database insertion error"}
+        )
+    user["_id"] = oid
 
     model_response = UserResponse(**user)
     user_resp = model_response.get_data()
@@ -204,7 +213,8 @@ def add_to_list(username, data):
     newvalues = {"$push": data}
     user_filter = {"username": username}
 
-    result = api.db.store.db.get_collection("user").update_one(user_filter, newvalues)
+    db = get_app_database().db
+    result = db.get_collection("user").update_one(user_filter, newvalues)
     return result
 
 
