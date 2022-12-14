@@ -8,18 +8,61 @@ Returns:
 import datetime
 
 import bson
-from flask import Flask
+from bson import ObjectId as bson_ObjectId
+from bson import json_util
+from flask import Flask, current_app
+from flask.json.provider import DefaultJSONProvider
 from flask_pymongo import PyMongo
+from pymongo.command_cursor import CommandCursor
 
-from api.db import CustomJSONProvider
 from config import Config
+
+
+def _convert_mongo_objects(obj):
+    """Convert objects, related to Mongo database to JSON."""
+    converted = None
+    if isinstance(obj, CommandCursor):
+        converted = json_util._json_convert(obj)  # pylint: disable=protected-access
+    elif isinstance(obj, bson_ObjectId):
+        converted = str(obj)
+    elif isinstance(obj, datetime.datetime):
+        converted = obj.isoformat()
+    elif isinstance(obj, bytes):
+        converted = obj.decode("utf-8")
+    return converted
+
+
+class CustomJSONProvider(DefaultJSONProvider):
+    """_summary_
+
+    Args:
+        json (_type_): _description_
+    """
+
+    def default(self, obj):
+        """_summary_
+
+        Args:
+            o (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        base = super().default
+
+        if isinstance(
+            obj,
+            (CommandCursor, bson_ObjectId, datetime.datetime, bytes),
+        ):
+            return _convert_mongo_objects(obj)
+        return base(self, obj)
 
 
 class Date:
     def __init__(self) -> None:
         self.value = datetime.datetime.now()
 
-    def new_value(self, value):
+    def set_test_value(self, value):
         self.value = value
 
 
@@ -27,7 +70,7 @@ class ObjectId:
     def __init__(self) -> None:
         self.value = bson.ObjectId()
 
-    def new_value(self, value):
+    def set_test_value(self, value):
         self.value = bson.ObjectId(value)
 
 
@@ -35,7 +78,7 @@ class Database:
     def __init__(self) -> None:
         self.value = PyMongo()
 
-    def new_value(self, value):
+    def set_test_value(self, value):
         self.value = value
 
 
@@ -45,11 +88,15 @@ app_database = Database()
 
 
 def get_app_date():
-    return app_date.value
+    if current_app.config.get("TESTING"):
+        return app_date.value
+    return Date().value
 
 
 def get_app_objectid():
-    return app_objectid.value
+    if current_app.config.get("TESTING"):
+        return app_objectid.value
+    return ObjectId().value
 
 
 def get_app_database():

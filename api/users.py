@@ -9,12 +9,11 @@ from typing import Dict
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-import api
-from api import get_app_database
 from api.auth import requires_auth
-from api.errors import AuthError, BadRequestError, InternalError, NotFoundError
+from api.errors import AuthError, BadRequestError
 from api.models import ChangeUserPasswordModel  # validate_model,
-from api.models import CreateUserValidator, UpdateUserModel, UserResponse
+from api.models import UpdateUserModel, UserResponse
+from database.users import add_object_to_user, get_user, insert_user, update_user
 
 users = Blueprint("users", __name__)
 
@@ -88,20 +87,6 @@ def update_user_info(username):
     return response
 
 
-def update_user(username, data):
-    """Update user
-
-    Returns:
-        json: response
-        int: http status code
-    """
-    newvalues = {"$set": data}
-    user_filter = {"username": username}
-
-    result = api.db.store.db.get_collection("user").update_one(user_filter, newvalues)
-    return result
-
-
 @users.route("/users/<username>/password", methods=["POST"])
 @requires_auth
 def update_user_password(username):
@@ -143,21 +128,6 @@ def update_user_password(username):
     return response
 
 
-def get_user(username):
-    """Get user
-
-    Returns:
-        json: response
-        int: http status code
-    """
-    user = api.db.store.db.get_collection("user").find_one({"username": username})
-    if user is None:
-        raise NotFoundError(
-            {"code": "user_not_found", "description": "the resource was not found"}
-        )
-    return user
-
-
 @users.route("/users", methods=["POST"])
 def new_user():
     """Creates new user
@@ -174,23 +144,7 @@ def new_user():
             {"code": "empty-request", "message": "request body must be a valid json"}
         )
 
-    # password_validator = PaswordValidator(**body)
-    # password = password_validator.get_data()
-
-    # If not valid pydantic.ValidationError is raised
-    model_validation = CreateUserValidator(**body)
-    user = model_validation.get_data()
-
-    # Unique constraint checked using mongodb indexes
-    db = get_app_database().db
-    result = db.get_collection("user").insert_one(user)
-    oid = result.inserted_id
-
-    if not oid:
-        raise InternalError(
-            {"code": "internal-error", "message": "database insertion error"}
-        )
-    user["_id"] = oid
+    user = insert_user(body)
 
     model_response = UserResponse(**user)
     user_resp = model_response.get_data()
@@ -203,21 +157,6 @@ def new_user():
     return response
 
 
-def add_to_list(username, data):
-    """Update user
-
-    Returns:
-        json: response
-        int: http status code
-    """
-    newvalues = {"$push": data}
-    user_filter = {"username": username}
-
-    db = get_app_database().db
-    result = db.get_collection("user").update_one(user_filter, newvalues)
-    return result
-
-
 def add_payment_method(username, payment_method_data):
     """_summary_
 
@@ -228,7 +167,9 @@ def add_payment_method(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = add_to_list(username=username, data={"payment_methods": payment_method_data})
+    rsp = add_object_to_user(
+        username=username, data={"payment_methods": payment_method_data}
+    )
 
     return rsp
 
@@ -243,7 +184,9 @@ def add_transaction(username, payment_method_data):
     Returns:
         _type_: _description_
     """
-    rsp = add_to_list(username=username, data={"transactions": payment_method_data})
+    rsp = add_object_to_user(
+        username=username, data={"transactions": payment_method_data}
+    )
 
     return rsp
 
@@ -258,6 +201,6 @@ def add_contract(username, id_contract):
     Returns:
         _type_: _description_
     """
-    rsp = add_to_list(username=username, data={"contracts": id_contract})
+    rsp = add_object_to_user(username=username, data={"contracts": id_contract})
 
     return rsp

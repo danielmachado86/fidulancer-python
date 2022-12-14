@@ -3,9 +3,9 @@
 
 import pytest
 
+from tests import FAKE_OID, FAKE_TIME
 from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import client  # pylint: disable=unused-import
-from tests.unit import FAKE_OID, FAKE_TIME
 from tests.unit.helpers import u_test_http_response
 
 TEST_ENDPOINT = "/v1/users"

@@ -3,8 +3,6 @@
 
 import pytest
 
-from api.app import get_app_database
-from api.models import CreateUserValidator
 from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import add_users, client  # pylint: disable=unused-import
 from tests.unit.helpers import u_test_http_response

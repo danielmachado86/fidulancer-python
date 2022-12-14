@@ -5,9 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.unit import FAKE_TIME  # pylint: disable=unused-import
+from tests import FAKE_OID, FAKE_TIME  # pylint: disable=unused-import
 from tests.unit import app  # pylint: disable=unused-import
-from tests.unit import FAKE_OID, add_users, client
+from tests.unit import add_users, client
 from tests.unit.helpers import u_test_http_response
 
 TEST_ENDPOINT = "/v1/contracts"

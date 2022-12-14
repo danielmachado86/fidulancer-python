@@ -6,7 +6,6 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
-import api
 from api.app import get_app_database, get_app_date, get_app_objectid
 from api.errors import BadRequestError, InternalError
 from api.models import CredentialsModel, UserResponse
@@ -60,9 +59,8 @@ def refresh_access_token():
         key=current_app.config["SECRET_KEY"],
         algorithms=["HS256", "HS512"],
     )
-    session = api.db.store.db.get_collection("session").find_one(
-        {"_id": ObjectId(payload["id"])}
-    )
+    db = get_app_database().db
+    session = db.get_collection("session").find_one({"_id": ObjectId(payload["id"])})
     if session is None:
         return abort(404, "session not found")
     access_token_expires_at = datetime.utcnow() + timedelta(

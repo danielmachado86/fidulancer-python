@@ -9,14 +9,11 @@ from datetime import datetime
 from bson import ObjectId
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 
-import api
 from api.app import get_app_database, get_app_date, get_app_objectid
 from api.auth import requires_auth
-from api.db import get_db
 from api.errors import AuthError, ConflictError, InternalError, NotFoundError
-from api.users import add_to_list
+from database.users import add_object_to_user
 
-users_store = get_db()
 contracts = Blueprint("contracts", __name__)
 
 
@@ -145,7 +142,7 @@ def send_invitation(username, contract_id):
             "invited_by": username,
         }
     }
-    add_to_list(new_member_username, contract_data)
+    add_object_to_user(new_member_username, contract_data)
 
     response = jsonify({"message": "new member invitation sent"})
     response.status_code = 200
@@ -224,7 +221,8 @@ def query_contract(username, contract_id):
         }
     ]
 
-    aggregate_response = api.db.store.db.get_collection("user").aggregate(aggregate)
+    db = get_app_database().db
+    aggregate_response = db.get_collection("user").aggregate(aggregate)
 
     aggregate_response = aggregate_response.next()
 
@@ -263,8 +261,9 @@ def query_user_invitations(username, contract_id):
         # {"$limit": 1},
     ]
 
+    db = get_app_database().db
     invitations = []
-    for invitation in api.db.store.db.get_collection("user").aggregate(aggregate):
+    for invitation in db.get_collection("user").aggregate(aggregate):
         invitations.append(invitation)
 
     return invitations
