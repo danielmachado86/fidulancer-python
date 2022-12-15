@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash
 
 from api.app import get_app_database, get_new_date, get_new_objectid
 from api.errors import BadRequestError, InternalError
-from api.models import CredentialsModel, UserResponse
+from database.models import CredentialsModel, UserResponse
 
 sessions = Blueprint("sessions", __name__)
 

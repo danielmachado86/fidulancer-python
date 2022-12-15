@@ -1,5 +1,5 @@
 from api.errors import InternalError
-from api.models import CreateUserValidator
+from database.models import CreateUserValidator
 
 
 class Database:

@@ -11,8 +11,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from api.auth import requires_auth
 from api.errors import AuthError, BadRequestError
-from api.models import ChangeUserPasswordModel  # validate_model,
-from api.models import UpdateUserModel, UserResponse
+from database.models import ChangeUserPasswordModel  # validate_model,
+from database.models import UpdateUserModel, UserResponse
 from database.users import add_object_to_user, get_user, insert_user, update_user
 
 users = Blueprint("users", __name__)

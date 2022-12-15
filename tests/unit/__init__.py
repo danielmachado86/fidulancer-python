@@ -5,7 +5,7 @@ import mongomock
 import pytest
 
 from api.app import app_database, app_date, app_objectid, create_app, get_app_database
-from api.models import CreateUserValidator
+from database.models import CreateUserValidator
 from tests import FAKE_OID, FAKE_TIME
 
 pytest.register_assert_rewrite("tests.unit.helpers")
@@ -36,7 +36,7 @@ def app():
 
     app_date.set_test_value(FAKE_TIME)
     app_objectid.set_test_value(FAKE_OID)
-    app_database.set_test_value(PyMongoMock())
+    app_database.set_database(PyMongoMock().get_database())
 
     yield app
 

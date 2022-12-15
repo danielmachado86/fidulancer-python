@@ -5,7 +5,7 @@ Returns:
 """
 from api.app import get_app_database
 from api.errors import InternalError, NotFoundError
-from api.models import CreateUserValidator
+from database.models import CreateUserValidator
 
 
 def insert_user(data):
