@@ -10,12 +10,13 @@ import datetime
 import bson
 from bson import ObjectId as bson_ObjectId
 from bson import json_util
-from flask import Flask, current_app
+from flask import Flask
 from flask.json.provider import DefaultJSONProvider
 from flask_pymongo import PyMongo
 from pymongo.command_cursor import CommandCursor
 
 from config import Config
+from database.config import Database
 
 
 def _convert_mongo_objects(obj):
@@ -60,26 +61,32 @@ class CustomJSONProvider(DefaultJSONProvider):
 
 class Date:
     def __init__(self) -> None:
-        self.value = datetime.datetime.now()
+        self.value = None
+        self.testing = False
 
     def set_test_value(self, value):
         self.value = value
+        self.testing = True
+
+    def get_new_value(self):
+        if self.testing:
+            return self.value
+        return datetime.datetime.now()
 
 
 class ObjectId:
     def __init__(self) -> None:
-        self.value = bson.ObjectId()
+        self.value = None
+        self.testing = False
 
     def set_test_value(self, value):
         self.value = bson.ObjectId(value)
+        self.testing = True
 
-
-class Database:
-    def __init__(self) -> None:
-        self.value = PyMongo()
-
-    def set_test_value(self, value):
-        self.value = value
+    def get_new_value(self):
+        if self.testing:
+            return self.value
+        return bson.ObjectId()
 
 
 app_date = Date()
@@ -87,20 +94,16 @@ app_objectid = ObjectId()
 app_database = Database()
 
 
-def get_app_date():
-    if current_app.config.get("TESTING"):
-        return app_date.value
-    return Date().value
+def get_new_date():
+    return app_date.get_new_value()
 
 
-def get_app_objectid():
-    if current_app.config.get("TESTING"):
-        return app_objectid.value
-    return ObjectId().value
+def get_new_objectid():
+    return app_objectid.get_new_value()
 
 
 def get_app_database():
-    return app_database.value
+    return app_database.db
 
 
 def create_app(config_class=Config) -> Flask:
@@ -117,9 +120,10 @@ def create_app(config_class=Config) -> Flask:
     app.config.from_object(config_class)
     app.json = CustomJSONProvider(app)
 
-    db = get_app_database()
+    driver = PyMongo()
+    driver.init_app(app)
 
-    db.init_app(app)
+    app_database.set_database(database=driver.db)
 
     from api.errors import errors  # pylint: disable=import-outside-toplevel
 

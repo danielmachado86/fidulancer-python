@@ -6,7 +6,7 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
-from api.app import get_app_database, get_app_date, get_app_objectid
+from api.app import get_app_database, get_new_date, get_new_objectid
 from api.errors import BadRequestError, InternalError
 from api.models import CredentialsModel, UserResponse
 
@@ -104,7 +104,7 @@ def new_session():
 
     user = check_user_password(username, password)
 
-    access_token_expires_at = get_app_date() + timedelta(
+    access_token_expires_at = get_new_date() + timedelta(
         minutes=current_app.config["ACCESS_TOKEN_MINUTES"]
     )
     access_token = jwt.encode(
@@ -117,9 +117,9 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    session_id = get_app_objectid()
+    session_id = get_new_objectid()
 
-    refresh_token_expires_at = get_app_date() + timedelta(
+    refresh_token_expires_at = get_new_date() + timedelta(
         days=current_app.config["REFRESH_TOKEN_DAYS"]
     )
     refresh_token = jwt.encode(

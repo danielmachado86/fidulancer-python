@@ -7,9 +7,13 @@ Yields:
 import pytest
 from testcontainers.mongodb import MongoDbContainer
 
+from api.app import app_date, app_objectid
+from database.config import Database
+from tests import FAKE_OID, FAKE_TIME
+
 
 @pytest.fixture()
-def empty_db():
+def db():
     """_summary_
 
     Args:
@@ -20,5 +24,8 @@ def empty_db():
     """
 
     with MongoDbContainer("mongo:latest") as mongo:
-
-        yield mongo.get_connection_client()
+        app_objectid.set_test_value(FAKE_OID)
+        app_date.set_test_value(FAKE_TIME)
+        client = mongo.get_connection_client()
+        database = client.fidulancer
+        yield Database(database=database)

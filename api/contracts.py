@@ -9,7 +9,7 @@ from datetime import datetime
 from bson import ObjectId
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 
-from api.app import get_app_database, get_app_date, get_app_objectid
+from api.app import get_app_database, get_new_date, get_new_objectid
 from api.auth import requires_auth
 from api.errors import AuthError, ConflictError, InternalError, NotFoundError
 from database.users import add_object_to_user
@@ -32,8 +32,8 @@ def new_contract():
 
     contract = {**body}
 
-    contract_id = get_app_objectid()
-    contract.update(_id=contract_id, created_at=get_app_date())
+    contract_id = get_new_objectid()
+    contract.update(_id=contract_id, created_at=get_new_date())
 
     value = {"$push": {"contracts.active": contract}}
     u_filter = {"username": g.authenticated_user["username"]}
@@ -47,7 +47,10 @@ def new_contract():
 
     contract.update(
         users=[
-            {"username": g.authenticated_user["username"], "added_at": get_app_date()}
+            {
+                "username": g.authenticated_user["username"],
+                "added_at": get_new_date(),
+            }
         ]
     )
 

@@ -1,8 +1,7 @@
 import pytest
 
-from database.users import insert_user
 from tests import FAKE_OID, FAKE_TIME  # pylint: disable=unused-import
-from tests.integration import empty_db
+from tests.integration import db
 
 
 def test_database_connection(
@@ -24,15 +23,13 @@ def test_database_connection(
                 "password": "secret",
             },
             {
-                "status_code": 201,
-                "body": {
-                    "_id": FAKE_OID,
-                    "name": "Jimena Lopez",
-                    "username": "jimenalogo",
-                    "email": "jimenalogo@gmail.com",
-                    "mobile": "+573046628057",
-                    "created_at": FAKE_TIME.isoformat(),
-                },
+                "_id": FAKE_OID,
+                "name": "Jimena Lopez",
+                "username": "jimenalogo",
+                "email": "jimenalogo@gmail.com",
+                "mobile": "+573046628057",
+                "created_at": FAKE_TIME.isoformat(),
+                "password": "secret",
             },
         ),
     ],
@@ -40,8 +37,8 @@ def test_database_connection(
         "ok",
     ],
 )
-def test_inser_user_ok(
-    empty_db, data, expected
+def test_insert_user_ok(
+    db, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    user = insert_user(data)
+    user = db.insert_user(data)
     assert user == expected

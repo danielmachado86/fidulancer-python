@@ -8,8 +8,7 @@ from bson.objectid import ObjectId as bson_ObjectId
 from pydantic import BaseModel, EmailStr, validator
 from werkzeug.security import generate_password_hash
 
-from api import get_app_date
-from api.app import get_app_objectid
+from api.app import get_new_date, get_new_objectid
 
 
 class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring
@@ -46,7 +45,7 @@ class CreateUserValidator(BaseModel):
     @validator("id", pre=True, always=True)
     @classmethod
     def set_id(cls, v):
-        return v or get_app_objectid()
+        return v or get_new_objectid()
 
     @validator("username")
     @classmethod
@@ -64,7 +63,7 @@ class CreateUserValidator(BaseModel):
     @validator("created_at", pre=True, always=True)
     @classmethod
     def set_created_at_now(cls, v):
-        return v or get_app_date()
+        return v or get_new_date()
 
     @validator("password")
     @classmethod
