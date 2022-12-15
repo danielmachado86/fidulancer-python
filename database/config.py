@@ -1,4 +1,3 @@
-from api.errors import InternalError
 from database.models import CreateUserValidator
 
 
@@ -27,7 +26,7 @@ class Database:
         result = self.db.get_collection("user").insert_one(user)
         oid = result.inserted_id
         if not oid:
-            raise InternalError(
+            raise Exception(
                 {"code": "internal-error", "message": "database insertion error"}
             )
         user["_id"] = oid
