@@ -4,7 +4,8 @@ from unittest.mock import patch
 import mongomock
 import pytest
 
-from api.app import app_database, create_app, get_app_database
+from api.app import create_app
+from database.config import app_database
 from database.models import CreateUserValidator
 from tests import FAKE_OID, FAKE_TIME
 from utils.initializers import set_new_date, set_new_objectid
@@ -77,5 +78,5 @@ def add_users(app):  # pylint: disable=redefined-outer-name
     }
     with app.test_request_context():
         user = CreateUserValidator(**user_data).get_data()
-    db = get_app_database().db
+    db = app_database.db
     db.get_collection("user").insert_one(user)

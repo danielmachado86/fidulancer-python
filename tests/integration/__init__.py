@@ -7,7 +7,7 @@ Yields:
 import pytest
 from testcontainers.mongodb import MongoDbContainer
 
-from database.config import Database
+from database.config import set_app_database
 from tests import FAKE_OID, FAKE_TIME
 from utils.initializers import set_new_date, set_new_objectid
 
@@ -28,4 +28,4 @@ def db():
         set_new_date(FAKE_TIME)
         client = mongo.get_connection_client()
         database = client.fidulancer
-        yield Database(database=database)
+        set_app_database(database)

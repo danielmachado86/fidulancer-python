@@ -11,3 +11,7 @@ app_database = Database()
 
 def get_app_database():
     return app_database.db
+
+
+def set_app_database(value):
+    return app_database.set_database(value)
