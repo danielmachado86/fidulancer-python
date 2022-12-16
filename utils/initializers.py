@@ -43,3 +43,11 @@ def get_new_date():
 
 def get_new_objectid():
     return app_objectid.get_new_value()
+
+
+def set_new_date(value):
+    return app_date.set_test_value(value)
+
+
+def set_new_objectid(value):
+    return app_objectid.set_test_value(value)

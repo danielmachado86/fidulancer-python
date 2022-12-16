@@ -7,7 +7,7 @@ import pytest
 from api.app import app_database, create_app, get_app_database
 from database.models import CreateUserValidator
 from tests import FAKE_OID, FAKE_TIME
-from utils.initializers import app_date, app_objectid
+from utils.initializers import set_new_date, set_new_objectid
 
 pytest.register_assert_rewrite("tests.unit.helpers")
 
@@ -35,8 +35,8 @@ def app():
     app = create_app()  # pylint: disable=redefined-outer-name
     app.config.update({"TESTING": True})
 
-    app_date.set_test_value(FAKE_TIME)
-    app_objectid.set_test_value(FAKE_OID)
+    set_new_date(FAKE_TIME)
+    set_new_objectid(FAKE_OID)
     app_database.set_database(PyMongoMock().get_database())
 
     yield app

@@ -9,10 +9,11 @@ from datetime import datetime
 from bson import ObjectId
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 
-from api.app import get_app_database, get_new_date, get_new_objectid
 from api.auth import requires_auth
 from api.errors import AuthError, ConflictError, InternalError, NotFoundError
+from database.config import app_database
 from database.users import add_object_to_user
+from utils.initializers import get_new_date, get_new_objectid
 
 contracts = Blueprint("contracts", __name__)
 
@@ -38,7 +39,7 @@ def new_contract():
     value = {"$push": {"contracts.active": contract}}
     u_filter = {"username": g.authenticated_user["username"]}
 
-    db = get_app_database().db
+    db = app_database.db
     result = db.get_collection("user").update_one(filter=u_filter, update=value)
     if result.matched_count == 0:
         raise InternalError(
@@ -224,7 +225,7 @@ def query_contract(username, contract_id):
         }
     ]
 
-    db = get_app_database().db
+    db = app_database.db
     aggregate_response = db.get_collection("user").aggregate(aggregate)
 
     aggregate_response = aggregate_response.next()
@@ -264,7 +265,7 @@ def query_user_invitations(username, contract_id):
         # {"$limit": 1},
     ]
 
-    db = get_app_database().db
+    db = app_database.db
     invitations = []
     for invitation in db.get_collection("user").aggregate(aggregate):
         invitations.append(invitation)

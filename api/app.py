@@ -15,7 +15,7 @@ from flask_pymongo import PyMongo
 from pymongo.command_cursor import CommandCursor
 
 from config import Config
-from database.config import Database
+from database.config import app_database
 
 
 def _convert_mongo_objects(obj):
@@ -56,13 +56,6 @@ class CustomJSONProvider(DefaultJSONProvider):
         ):
             return _convert_mongo_objects(obj)
         return base(self, obj)
-
-
-app_database = Database()
-
-
-def get_app_database():
-    return app_database.db
 
 
 def create_app(config_class=Config) -> Flask:

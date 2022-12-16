@@ -6,9 +6,10 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.security import check_password_hash
 
-from api.app import get_app_database, get_new_date, get_new_objectid
 from api.errors import BadRequestError, InternalError
+from database.config import app_database
 from database.models import CredentialsModel, UserResponse
+from utils.initializers import get_new_date, get_new_objectid
 
 sessions = Blueprint("sessions", __name__)
 
@@ -31,7 +32,7 @@ class JSONEncoder(json.JSONEncoder):
 def check_user_password(username, password):
     if username is None or password is None:
         abort(400, "username and password are required")
-    db = get_app_database().db
+    db = app_database.db
     user_data = db.get_collection("user").find_one({"username": username})
     if user_data is None or not check_password_hash(
         user_data.get("password"), password
@@ -59,7 +60,7 @@ def refresh_access_token():
         key=current_app.config["SECRET_KEY"],
         algorithms=["HS256", "HS512"],
     )
-    db = get_app_database().db
+    db = app_database.db
     session = db.get_collection("session").find_one({"_id": ObjectId(payload["id"])})
     if session is None:
         return abort(404, "session not found")
@@ -133,7 +134,7 @@ def new_session():
         json_encoder=JSONEncoder,
     )
 
-    db = get_app_database().db
+    db = app_database.db
     result = db.get_collection("session").insert_one(
         {
             "_id": session_id,

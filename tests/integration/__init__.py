@@ -9,7 +9,7 @@ from testcontainers.mongodb import MongoDbContainer
 
 from database.config import Database
 from tests import FAKE_OID, FAKE_TIME
-from utils.initializers import app_date, app_objectid
+from utils.initializers import set_new_date, set_new_objectid
 
 
 @pytest.fixture()
@@ -24,8 +24,8 @@ def db():
     """
 
     with MongoDbContainer("mongo:latest") as mongo:
-        app_objectid.set_test_value(FAKE_OID)
-        app_date.set_test_value(FAKE_TIME)
+        set_new_objectid(FAKE_OID)
+        set_new_date(FAKE_TIME)
         client = mongo.get_connection_client()
         database = client.fidulancer
         yield Database(database=database)
