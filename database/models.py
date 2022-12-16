@@ -8,7 +8,7 @@ from bson.objectid import ObjectId as bson_ObjectId
 from pydantic import BaseModel, EmailStr, validator
 from werkzeug.security import generate_password_hash
 
-from api.app import get_new_date, get_new_objectid
+from utils.initializers import get_new_date, get_new_objectid
 
 
 class ObjectId(bson_ObjectId):  # pylint: disable=missing-class-docstring

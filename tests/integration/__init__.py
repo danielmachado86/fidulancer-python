@@ -7,9 +7,9 @@ Yields:
 import pytest
 from testcontainers.mongodb import MongoDbContainer
 
-from api.app import app_date, app_objectid
 from database.config import Database
 from tests import FAKE_OID, FAKE_TIME
+from utils.initializers import app_date, app_objectid
 
 
 @pytest.fixture()
