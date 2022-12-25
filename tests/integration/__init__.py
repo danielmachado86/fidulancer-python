@@ -13,7 +13,7 @@ from utils.initializers import set_new_date, set_new_objectid
 
 
 @pytest.fixture()
-def db():
+def db_client():
     """_summary_
 
     Args:
@@ -24,8 +24,24 @@ def db():
     """
 
     with MongoDbContainer("mongo:latest") as mongo:
-        set_new_objectid(FAKE_OID)
-        set_new_date(FAKE_TIME)
         client = mongo.get_connection_client()
-        database = client.fidulancer
-        set_app_database(database)
+        yield client
+
+
+@pytest.fixture()
+def db(db_client):
+
+    """_summary_
+
+    Args:
+        app_configuration (_type_): _description_
+
+    Yields:
+        _type_: _description_
+    """
+
+    set_new_objectid(FAKE_OID)
+    set_new_date(FAKE_TIME)
+    database = db_client.fidulancer
+    set_app_database(database)
+    yield database
