@@ -25,7 +25,7 @@ TEST_ENDPOINT = "/v1/users"
             {
                 "status_code": 201,
                 "body": {
-                    "_id": FAKE_OID,
+                    "_id": str(FAKE_OID),
                     "name": "Jimena Lopez",
                     "username": "jimenalogo",
                     "email": "jimenalogo@gmail.com",

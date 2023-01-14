@@ -36,9 +36,13 @@ def app():
     app = create_app()  # pylint: disable=redefined-outer-name
     app.config.update({"TESTING": True})
 
+    db_client = PyMongoMock()
+    db_client.init_app(app)
+    dbase = db_client.get_database("fiulancer")
+
     set_new_date(FAKE_TIME)
     set_new_objectid(FAKE_OID)
-    app_database.set_database(PyMongoMock().get_database())
+    app_database.set_database(database=dbase)
 
     yield app
 

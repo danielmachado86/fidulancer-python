@@ -22,7 +22,7 @@ TEST_USERNAME = "jimenalogo"
             {
                 "status_code": 201,
                 "body": {
-                    "_id": FAKE_OID,
+                    "_id": str(FAKE_OID),
                     "name": "Contrato 1",
                     "type": "rental",
                     "created_at": FAKE_TIME.isoformat(),
