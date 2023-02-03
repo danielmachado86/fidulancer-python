@@ -11,7 +11,6 @@ from bson import ObjectId as bson_ObjectId
 from bson import json_util
 from flask import Flask
 from flask.json.provider import DefaultJSONProvider
-from flask_pymongo import PyMongo
 from pymongo.command_cursor import CommandCursor
 
 from config import Config
@@ -72,10 +71,7 @@ def create_app(config_class=Config) -> Flask:
     app.config.from_object(config_class)
     app.json = CustomJSONProvider(app)
 
-    driver = PyMongo()
-    driver.init_app(app)
-
-    app_database.set_database(database=driver.db)
+    app_database.init_app(app)
 
     from api.errors import errors  # pylint: disable=import-outside-toplevel
 

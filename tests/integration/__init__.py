@@ -4,16 +4,20 @@ Yields:
     _type_: _description_
 """
 
+from typing import Generator
+
 import pytest
+from pymongo import MongoClient
+from pymongo.database import Database
 from testcontainers.mongodb import MongoDbContainer
 
-from database.config import set_app_database
+from api.app import app_database
 from tests import FAKE_OID, FAKE_TIME
 from utils.initializers import set_new_date, set_new_objectid
 
 
 @pytest.fixture()
-def db_client():
+def db_client() -> Generator[MongoClient, None, None]:
     """_summary_
 
     Args:
@@ -29,7 +33,9 @@ def db_client():
 
 
 @pytest.fixture()
-def db(db_client):
+def db(  # pylint: disable=invalid-name
+    db_client: MongoClient,  # pylint: disable=redefined-outer-name
+) -> Generator[Database, None, None]:
 
     """_summary_
 
@@ -43,5 +49,5 @@ def db(db_client):
     set_new_objectid(FAKE_OID)
     set_new_date(FAKE_TIME)
     database = db_client.fidulancer
-    set_app_database(database)
+    app_database.set_database(database)
     yield database

@@ -1,17 +1,21 @@
-class Database:
-    def __init__(self, database=None) -> None:
+from flask import Flask
+from flask_pymongo import PyMongo
+from pymongo.database import Database
+
+
+class MongoDB:
+    def __init__(self) -> None:
+        self.driver = PyMongo()
+        self.db = self.driver.db
+
+    def set_database(self, database: Database):
         self.db = database
 
-    def set_database(self, database):
-        self.db = database
+    def init_app(self, app: Flask) -> None:
+        self.driver.init_app(app)
+
+    def get_app_database(self) -> Database | None:
+        return self.db
 
 
-app_database = Database()
-
-
-def get_app_database():
-    return app_database.db
-
-
-def set_app_database(value):
-    return app_database.set_database(value)
+app_database = MongoDB()

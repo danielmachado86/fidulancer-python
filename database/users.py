@@ -23,7 +23,7 @@ def insert_user(data):
     user = model_validation.get_data()
 
     # Unique constraint checked using mongodb indexes
-    db = app_database.db
+    db = app_database.get_app_database()
     result = db.get_collection("user").insert_one(user)
     oid = result.inserted_id
     if not oid:
@@ -44,7 +44,7 @@ def update_user(username, data):
     newvalues = {"$set": data}
     user_filter = {"username": username}
 
-    db = app_database.db
+    db = app_database.get_app_database()
     result = db.get_collection("user").update_one(user_filter, newvalues)
     return result
 
@@ -56,7 +56,8 @@ def get_user(username):
         json: response
         int: http status code
     """
-    db = app_database.db
+
+    db = app_database.get_app_database()
     user = db.get_collection("user").find_one({"username": username})
     if user is None:
         raise NotFoundError(
@@ -75,6 +76,6 @@ def add_object_to_user(username, data):
     newvalues = {"$push": data}
     user_filter = {"username": username}
 
-    db = app_database.db
+    db = app_database.get_app_database()
     result = db.get_collection("user").update_one(user_filter, newvalues)
     return result
