@@ -6,7 +6,7 @@ import pytest
 from tests import FAKE_OID, FAKE_TIME
 from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import client  # pylint: disable=unused-import
-from tests.unit.helpers import u_test_http_response
+from tests.unit.helpers import u_test_post_response
 
 TEST_ENDPOINT = "/v1/users"
 
@@ -42,7 +42,7 @@ TEST_ENDPOINT = "/v1/users"
 def test_user_registration_ok(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, TEST_ENDPOINT, data, expected)
+    u_test_post_response(client, TEST_ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -99,7 +99,7 @@ def test_user_registration_ok(
 def test_user_registration_error_request_body(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, TEST_ENDPOINT, data, expected)
+    u_test_post_response(client, TEST_ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -191,4 +191,4 @@ def test_user_registration_error_request_body(
 def test_user_registration_error_missing_fields(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, TEST_ENDPOINT, data, expected)
+    u_test_post_response(client, TEST_ENDPOINT, data, expected)

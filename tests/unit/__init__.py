@@ -38,7 +38,7 @@ def app():
 
     db_client = PyMongoMock()
     db_client.init_app(app)
-    dbase = db_client.get_database("fiulancer")
+    dbase = db_client.get_database("fidulancer")
 
     set_new_date(FAKE_TIME)
     set_new_objectid(FAKE_OID)

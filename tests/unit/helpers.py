@@ -2,7 +2,7 @@
 """
 
 
-def u_test_http_response(
+def u_test_post_response(
     client, endpoint, data, expected, headers=None
 ):  # pylint: disable=redefined-outer-name
     """_summary_

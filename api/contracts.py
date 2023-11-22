@@ -12,6 +12,7 @@ from flask import Blueprint, current_app, g, jsonify, request, url_for
 from api.auth import requires_auth
 from api.errors import AuthError, ConflictError, InternalError, NotFoundError
 from database.config import app_database
+from database.contracts import insert_contract
 from database.users import add_object_to_user
 from utils.initializers import get_new_date, get_new_objectid
 
@@ -31,37 +32,32 @@ def new_contract():
     current_app.logger.info("Creating new contract")
     body = request.get_json()
 
-    contract = {**body}
+    insert_contract(body)
 
-    contract_id = get_new_objectid()
-    contract.update(_id=contract_id, created_at=get_new_date())
-
-    value = {"$push": {"contracts.active": contract}}
-    u_filter = {"username": g.authenticated_user["username"]}
-
-    db = app_database.db
-    result = db.get_collection("user").update_one(filter=u_filter, update=value)
-    if result.matched_count == 0:
-        raise InternalError(
-            {"code": "internal-error", "message": "database update error"}
-        )
-
-    contract.update(
-        users=[
-            {
-                "username": g.authenticated_user["username"],
-                "added_at": get_new_date(),
-            }
-        ]
-    )
-
-    response = jsonify(contract)
+    response = jsonify({"message": "contract succesfully created"})
     response.status_code = 201
-    response.headers["Location"] = url_for(
-        "contracts.get_contract",
-        contract_id=contract_id,
-        username=g.authenticated_user["username"],
-    )
+
+    return response
+
+
+@contracts.route("/contracts/<contract_id>/parameters", methods=["POST"])
+@requires_auth
+def add_contract_parameters(contract_id):
+    """Creates new contract
+
+    Returns:
+        json: response
+        int: http status code
+    """
+
+    current_app.logger.info("Creating new contract")
+    body = request.get_json()
+
+    add_contract_parameters(body)
+
+    response = jsonify({"message": "contract succesfully created"})
+    response.status_code = 201
+
     return response
 
 

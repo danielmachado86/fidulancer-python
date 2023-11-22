@@ -14,7 +14,7 @@ class MongoDB:
     def init_app(self, app: Flask) -> None:
         self.driver.init_app(app)
 
-    def get_app_database(self) -> Database | None:
+    def get_app_database(self) -> Database:
         return self.db
 
 

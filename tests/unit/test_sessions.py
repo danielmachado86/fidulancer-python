@@ -5,7 +5,7 @@ import pytest
 
 from tests.unit import app  # pylint: disable=unused-import
 from tests.unit import add_users, client  # pylint: disable=unused-import
-from tests.unit.helpers import u_test_http_response
+from tests.unit.helpers import u_test_post_response
 
 ENDPOINT = "/v1/sessions"
 
@@ -46,7 +46,7 @@ ENDPOINT = "/v1/sessions"
 def test_new_user_session_ok(
     client, data, expected, add_users
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, ENDPOINT, data, expected)
+    u_test_post_response(client, ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -103,7 +103,7 @@ def test_new_user_session_ok(
 def test_new_user_session_error_request_body(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, ENDPOINT, data, expected)
+    u_test_post_response(client, ENDPOINT, data, expected)
 
 
 @pytest.mark.parametrize(
@@ -147,4 +147,4 @@ def test_new_user_session_error_request_body(
 def test_new_user_session_error_missing_fields(
     client, data, expected
 ):  # pylint: disable=redefined-outer-name, missing-function-docstring
-    u_test_http_response(client, ENDPOINT, data, expected)
+    u_test_post_response(client, ENDPOINT, data, expected)

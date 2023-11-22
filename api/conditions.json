@@ -1,0 +1,122 @@
+{
+    "conditions": [
+        {
+            "name": "start_date",
+            "parameters": {
+                "optional": [
+                    {
+                        "name": "parameters.fixed_start_date",
+                        "units": "date"
+                    }
+                ],
+                "required": []
+            },
+            "dependencies": [
+                {
+                    "name": "signature_date",
+                    "units": "date"
+                }
+            ]
+        },
+        {
+            "name": "signature_date",
+            "parameters": {
+                "optional": [
+                    {
+                        "name": "parameters.fixed_minimum_parties",
+                        "units": "number_of_parties",
+                        "default": 2
+                    }
+                ],
+                "required": []
+            },
+            "dependencies": [
+                {
+                    "name": "number_signatures",
+                    "units": "number_of_signatures"
+                }
+            ]
+        },
+        {
+            "name": "number_signatures",
+            "parameters": {
+                "optional": [],
+                "required": [
+                    {
+                        "name": "users",
+                        "units": "list_of_users"
+                    }
+                ]
+            },
+            "dependencies": []
+        },
+        {
+            "name": "end_date",
+            "parameters": {
+                "optional": [],
+                "required": [
+                    {
+                        "name": "parameters.contract_duration",
+                        "units": "months"
+                    }
+                ]
+            },
+            "dependencies": [
+                {
+                    "name": "start_date",
+                    "units": "date"
+                }
+            ]
+        },
+        {
+            "name": "number_payments",
+            "parameters": {
+                "optional": [
+                    {
+                        "name": "parameters.payment_periodicity",
+                        "units": "month",
+                        "default": 1
+                    }
+                ],
+                "required": []
+            }
+        },
+        {
+            "name": "payment_date",
+            "parameters": {
+                "optional": [
+                    {
+                        "name": "parameters.payment_periodicity",
+                        "units": "month",
+                        "default": 1
+                    }
+                ],
+                "required": []
+            },
+            "dependencies": [
+                {
+                    "name": "start_date",
+                    "units": "date"
+                }
+            ]
+        },
+        {
+            "name": "payment_value",
+            "parameters": {
+                "optional": [
+                    {
+                        "name": "parameters.payment_periodicity",
+                        "units": "month",
+                        "default": 1
+                    }
+                ],
+                "required": [
+                    {
+                        "name": "parameters.contract_value",
+                        "units": "COP"
+                    }
+                ]
+            }
+        }
+    ]
+}
